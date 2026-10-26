@@ -77,6 +77,25 @@ Other scripts: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`,
 
 On a phone, open the site and use **Add to Home Screen** to install it.
 
+## Scheduled runs
+
+Vercel Cron calls `GET /api/cron/daily` once a day at 11:00 UTC (see `vercel.json`). For each person with at least one active search profile, and the daily run left on (the switch at the bottom of `/brief`), it:
+
+1. Runs their non-retired LinkedIn and USAJobs queries through the Search agent, stalest first. LinkedIn stays at 25 to 50 results per run. Indeed and ZipRecruiter stay import only and are never run. Queries marked noise are skipped.
+2. Scores the new jobs, only when `ANTHROPIC_API_KEY` is set.
+3. Stores that day's brief in the `briefs` table. `/brief` and `GET /api/brief` show it.
+
+Every step is logged to `agent_runs` and `audit_log`. Nothing is emailed, messaged, or pushed; the brief is read in the app.
+
+Settings (server only, in Vercel **Settings > Environment Variables**):
+
+- `CRON_SECRET`: required. Vercel sends it as `Authorization: Bearer <CRON_SECRET>`. Without it the route returns 503; with a wrong header, 401.
+- `SUPABASE_SERVICE_ROLE_KEY`: required for the daily run. There is no signed-in person on a scheduled call, so this route (and only this route) uses the service role key, which bypasses Row Level Security. All of its queries filter by the person's user id explicitly (`src/lib/brief/daily.ts`, `load.ts`, `scoped-search-store.ts`); a test checks that nothing else imports the service role client.
+- `DAILY_SEARCH_CAP`: optional, default 10. Most searches per person per day, counting searches they ran by hand that day.
+- `APIFY_TOKEN`, `USAJOBS_API_KEY`, `USAJOBS_USER_AGENT`: a source without its keys is skipped.
+
+Run `supabase/migrations/0006_brief.sql` before the first scheduled run. To try it by hand: `curl -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron/daily`.
+
 ## Project layout
 
 ```

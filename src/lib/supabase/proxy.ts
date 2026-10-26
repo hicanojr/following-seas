@@ -2,8 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { getSupabasePublicConfig } from "./env";
 
-/** Paths that do not require a signed-in user. */
-export const PUBLIC_PATHS = ["/login", "/auth"];
+/**
+ * Paths that do not require a signed-in user. /api/cron is called by Vercel
+ * Cron with no session; its route checks `Authorization: Bearer ${CRON_SECRET}`.
+ */
+export const PUBLIC_PATHS = ["/login", "/auth", "/api/cron"];
 
 export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
