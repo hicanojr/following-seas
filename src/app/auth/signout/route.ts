@@ -1,0 +1,9 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  if (supabase) await supabase.auth.signOut();
+  // 303 so the browser follows the redirect with GET.
+  return NextResponse.redirect(new URL("/login", request.nextUrl.origin), { status: 303 });
+}
