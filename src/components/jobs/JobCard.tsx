@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { EasyApply } from "@/lib/jobs/types";
 
 export interface ScoredJob {
@@ -55,7 +56,8 @@ function List({ title, items, tone }: { title: string; items: string[]; tone: "m
   );
 }
 
-export function JobCard({ job }: { job: ScoredJob }) {
+/** `children` renders under the card, for the person's Keep or Skip controls. */
+export function JobCard({ job, children }: { job: ScoredJob; children?: ReactNode }) {
   const href = safeHttpUrl(job.url);
   return (
     <article className="rounded-2xl border border-line bg-card p-5 shadow-sm">
@@ -106,11 +108,12 @@ export function JobCard({ job }: { job: ScoredJob }) {
           <span className="text-muted">No link on file</span>
         )}
       </div>
+      {children}
     </article>
   );
 }
 
-export function ScreenedOutCard({ job }: { job: ScoredJob }) {
+export function ScreenedOutCard({ job, children }: { job: ScoredJob; children?: ReactNode }) {
   const href = safeHttpUrl(job.url);
   return (
     <li className="rounded-xl border border-line bg-card p-4 text-sm">
@@ -124,6 +127,7 @@ export function ScreenedOutCard({ job }: { job: ScoredJob }) {
           Open posting
         </a>
       ) : null}
+      {children}
     </li>
   );
 }

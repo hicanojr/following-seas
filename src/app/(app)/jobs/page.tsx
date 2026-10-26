@@ -3,12 +3,21 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState, PageHeader } from "@/components/EmptyState";
 import { JobCard, ScreenedOutCard, type ScoredJob } from "@/components/jobs/JobCard";
+import { DecisionControls, type CurrentDecision } from "@/components/jobs/DecisionControls";
 import { ScoreButton } from "@/components/jobs/ScoreButton";
 import type { EasyApply } from "@/lib/jobs/types";
 import { formatUsd } from "@/lib/scoring/prechecks";
+import { groupJobs, JOB_VIEWS, parseJobView, type JobView } from "@/lib/shortlist/views";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Jobs" };
+
+const EMPTY_VIEW: Record<JobView, string> = {
+  review: "Nothing waiting for review. New scored jobs will appear here for you to keep or skip.",
+  kept: "No kept jobs yet. Jobs you keep appear here, ready to save to your tracker.",
+  skipped: "No skipped jobs yet. Skips and their reasons appear here, and you can change your mind.",
+  screened: "Nothing screened out. Jobs that hit a deal-breaker appear here with the reason.",
+};
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
@@ -145,9 +154,43 @@ async function JobsContent({ searchParams }: { searchParams: SearchParams }) {
     });
   }
 
-  const active = scored.filter((j) => !j.dealBreakerHit).sort((a, b) => b.fit - a.fit);
-  const screened = scored.filter((j) => j.dealBreakerHit);
+  const scoredIds = scored.map((j) => j.jobId);
+  const [{ data: decisionRows }, { data: applicationRows }] = scoredIds.length
+    ? await Promise.all([
+        supabase.from("decisions").select("job_id, decision, reason").eq("profile_id", profile.id).in("job_id", scoredIds),
+        supabase.from("applications").select("job_id, status").in("job_id", scoredIds),
+      ])
+    : [{ data: [] as Record<string, unknown>[] }, { data: [] as Record<string, unknown>[] }];
+
+  const decisions = new Map<string, CurrentDecision>();
+  for (const d of decisionRows ?? []) {
+    if (d.decision === "keep" || d.decision === "skip") {
+      decisions.set(d.job_id as string, { decision: d.decision, reason: (d.reason as string | null) ?? null });
+    }
+  }
+  const trackerStatus = new Map((applicationRows ?? []).map((a) => [a.job_id as string, String(a.status)]));
+
+  const groups = groupJobs(scored, decisions);
+  const view = parseJobView(params.view);
+  const shown = groups[view];
   const unscored = Math.max(0, (jobCount ?? 0) - scored.length);
+  const hrefFor = (v: JobView) => {
+    const q = new URLSearchParams();
+    if (profiles.length > 1) q.set("profile", profile.id);
+    if (v !== "review") q.set("view", v);
+    const qs = q.toString();
+    return qs ? `/jobs?${qs}` : "/jobs";
+  };
+
+  const controls = (job: ScoredJob) => (
+    <DecisionControls
+      key={`${job.jobId}:${decisions.get(job.jobId)?.decision ?? "none"}`}
+      jobId={job.jobId}
+      profileId={profile.id}
+      current={decisions.get(job.jobId) ?? null}
+      trackerStatus={trackerStatus.get(job.jobId) ?? null}
+    />
+  );
 
   return (
     <div className="space-y-6">
@@ -187,7 +230,7 @@ async function JobsContent({ searchParams }: { searchParams: SearchParams }) {
         </div>
       </section>
 
-      {active.length === 0 && screened.length === 0 ? (
+      {scored.length === 0 ? (
         <EmptyState
           heading="No scored jobs yet"
           upcoming={[
@@ -201,34 +244,58 @@ async function JobsContent({ searchParams }: { searchParams: SearchParams }) {
             location.
           </p>
         </EmptyState>
-      ) : null}
+      ) : (
+        <>
+          <nav aria-label="Filter jobs" className="-mx-5 overflow-x-auto px-5">
+            <ul className="flex gap-2 whitespace-nowrap">
+              {JOB_VIEWS.map((v) => {
+                const current = v.key === view;
+                return (
+                  <li key={v.key}>
+                    <Link
+                      href={hrefFor(v.key)}
+                      aria-current={current ? "page" : undefined}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm ${
+                        current
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-line text-muted hover:text-foreground"
+                      }`}
+                    >
+                      {v.label}
+                      <span className={current ? "opacity-80" : "text-xs"}>{groups[v.key].length}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
 
-      {active.length > 0 ? (
-        <section aria-labelledby="scored-heading" className="space-y-4">
-          <h2 id="scored-heading" className="font-serif text-xl">
-            Scored, best fit first
-          </h2>
-          {active.map((job) => (
-            <JobCard key={job.jobId} job={job} />
-          ))}
-        </section>
-      ) : null}
-
-      {screened.length > 0 ? (
-        <section aria-labelledby="screened-heading" className="space-y-3">
-          <h2 id="screened-heading" className="font-serif text-xl">
-            Screened out
-          </h2>
-          <p className="text-xs text-muted">
-            These postings matched one of your deal-breakers. They are kept, not deleted.
-          </p>
-          <ul className="space-y-2">
-            {screened.map((job) => (
-              <ScreenedOutCard key={job.jobId} job={job} />
-            ))}
-          </ul>
-        </section>
-      ) : null}
+          <section aria-label={JOB_VIEWS.find((v) => v.key === view)?.label} className="space-y-4">
+            {view === "screened" ? (
+              <p className="text-xs text-muted">
+                These postings matched one of your deal-breakers. They are kept, not deleted, and you can still keep
+                one if the screen got it wrong.
+              </p>
+            ) : null}
+            {shown.length === 0 ? <p className="text-sm text-muted">{EMPTY_VIEW[view]}</p> : null}
+            {view === "screened" ? (
+              <ul className="space-y-2">
+                {shown.map((job) => (
+                  <ScreenedOutCard key={job.jobId} job={job}>
+                    {controls(job)}
+                  </ScreenedOutCard>
+                ))}
+              </ul>
+            ) : (
+              shown.map((job) => (
+                <JobCard key={job.jobId} job={job}>
+                  {controls(job)}
+                </JobCard>
+              ))
+            )}
+          </section>
+        </>
+      )}
     </div>
   );
 }
