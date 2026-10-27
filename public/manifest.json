@@ -1,0 +1,15 @@
+{
+  "name": "Fair Winds",
+  "short_name": "Fair Winds",
+  "description": "A calm, private job search with a Chief of Staff at the helm.",
+  "start_url": "/brief",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f5ef",
+  "theme_color": "#0b2545",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
