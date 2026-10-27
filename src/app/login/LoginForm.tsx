@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, createEmailLinkClient } from "@/lib/supabase/client";
 import { safeNext } from "@/lib/safe-next";
 
 type Status = "idle" | "sending" | "sent" | "error";
@@ -30,12 +30,13 @@ export function LoginForm() {
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!supabase) return;
+    const emailClient = createEmailLinkClient();
+    if (!emailClient) return;
     setStatus("sending");
     setMessage(null);
-    const redirect = new URL("/auth/callback", window.location.origin);
+    const redirect = new URL("/auth/confirm", window.location.origin);
     redirect.searchParams.set("next", safeNext(params.get("next")));
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await emailClient.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: redirect.toString() },
     });
