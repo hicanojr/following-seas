@@ -64,6 +64,14 @@ describe("prompts", () => {
     expect(prompt).toContain("Pay not listed");
     expect(prompt).toContain("Hospital setting");
     expect(prompt).toContain("Run the core lab.");
+    expect(prompt).not.toContain("<parsed_resume>");
+  });
+
+  it("includes the cached resume parse when one is attached", () => {
+    const prompt = buildUserPrompt(makeJob(), makeProfile(), MLT_FACTS, pre(), { skills: ["HPLC"] });
+    expect(prompt).toContain("<parsed_resume>");
+    expect(prompt).toContain("HPLC");
+    expect(SYSTEM_PROMPT).toMatch(/cached extraction/);
   });
 });
 

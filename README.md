@@ -81,7 +81,7 @@ On a phone, open the site and use **Add to Home Screen** to install it.
 
 Vercel Cron calls `GET /api/cron/daily` once a day at 11:00 UTC (see `vercel.json`). For each person with at least one active search profile, and the daily run left on (the switch at the bottom of `/brief`), it:
 
-1. Runs their non-retired LinkedIn and USAJobs queries through the Search agent, stalest first. LinkedIn stays at 25 to 50 results per run. Indeed and ZipRecruiter stay import only and are never run. Queries marked noise are skipped.
+1. Runs their non-retired LinkedIn and USAJobs queries through the Search agent, stalest first. LinkedIn stays at 25 to 50 results per run. Indeed, ZipRecruiter, Glassdoor, and Google are not run here; the [JobSpy worker](worker/README.md) runs those. Queries marked noise are skipped.
 2. Scores the new jobs, only when `ANTHROPIC_API_KEY` is set.
 3. Stores that day's brief in the `briefs` table. `/brief` and `GET /api/brief` show it.
 
@@ -96,6 +96,14 @@ Settings (server only, in Vercel **Settings > Environment Variables**):
 
 Run `supabase/migrations/0006_brief.sql` before the first scheduled run. To try it by hand: `curl -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron/daily`.
 
+## JobSpy worker
+
+A separate Python program searches Indeed, ZipRecruiter, Glassdoor, and Google, writes the postings (including the posting URL), embeds the resume and the postings, parses the base resume once, and stores keyword suggestions. It does not run inside the Next.js app. LinkedIn stays on Apify.
+
+Setup, the Docker cron, the GitHub Actions schedule, and the environment variable names are in [worker/README.md](worker/README.md). Run `supabase/migrations/0007_jobspy.sql` before the first worker run. Paste the base resume on the Profiles tab.
+
+When a resume embedding exists, scoring sends only the closest quarter of postings to Claude. Keyword lists on each job are suggestions only. Agents still never apply, never use Easy Apply, and never message anyone.
+
 ## Project layout
 
 ```
@@ -109,6 +117,7 @@ src/lib/supabase/     Browser, server, and proxy Supabase clients
 supabase/migrations/  Database schema and RLS
 supabase/seed/        Seed data
 scripts/              Seed generator
+worker/               JobSpy search, embeddings, resume parse (Python)
 ```
 
 CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests, and build on every pull request and on pushes to `main`.

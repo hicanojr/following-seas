@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { setQueryRetired } from "./actions";
 import { DeleteProfile } from "./DeleteProfile";
 import { ProfileEditor } from "./ProfileEditor";
+import { ResumeForm } from "./ResumeForm";
 
 export const metadata: Metadata = { title: "Profiles" };
 
@@ -79,6 +80,7 @@ async function ProfilesContent({ searchParams }: { searchParams: SearchParams })
 
   return (
     <div className="space-y-6">
+      <ResumeCard />
       <nav aria-label="Your profiles" className="-mx-1 flex flex-wrap gap-2">
         {profiles.map((p) => {
           const current = p.id === profile?.id;
@@ -272,10 +274,51 @@ const QUALITY_TONE: Record<string, string> = {
 const SOURCE_LABEL: Record<string, string> = {
   indeed: "Indeed",
   ziprecruiter: "ZipRecruiter",
+  glassdoor: "Glassdoor",
+  google: "Google Jobs",
   linkedin: "LinkedIn",
   usajobs: "USAJobs",
   manual: "Manual",
 };
+
+function resumeStatus(row: { parsed_at: string | null; embedded_at: string | null } | null, error: boolean): string {
+  if (error) return "Resume storage is not available until the latest database migration is applied.";
+  if (!row) return "No resume saved yet. The worker parses it once, then reuses that JSON.";
+  if (row.parsed_at && row.embedded_at) {
+    return "Parsed and embedded. Scoring sends only the closest postings, and keyword suggestions can appear on each job. Change the text to parse it again.";
+  }
+  if (row.parsed_at) return "Parsed and cached. The next JobSpy run will embed it. Change the text to parse it again.";
+  return "Saved. The next JobSpy run will parse it once and reuse that JSON until you change it.";
+}
+
+async function ResumeCard() {
+  const supabase = await createClient();
+  if (!supabase) return null;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from("resumes")
+    .select("raw_text, parsed_at, embedded_at")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const row = data
+    ? { parsed_at: (data.parsed_at as string | null) ?? null, embedded_at: (data.embedded_at as string | null) ?? null }
+    : null;
+  return (
+    <section className={card} aria-labelledby="resume-heading">
+      <h2 id="resume-heading" className="text-lg font-semibold">
+        Base resume
+      </h2>
+      <p className="mt-1 text-sm text-muted">
+        Paste your resume once. It is parsed into JSON on the next scheduled run and reused after that. Agents use only
+        what is written here and on your career facts. Nothing is sent to employers.
+      </p>
+      <ResumeForm rawText={error ? "" : String(data?.raw_text ?? "")} status={resumeStatus(row, Boolean(error))} />
+    </section>
+  );
+}
 
 function hits(relevant: unknown, total: unknown): string {
   const t = typeof total === "number" ? total : null;
@@ -292,8 +335,8 @@ function QueryLibrary({ queries }: { queries: Record<string, unknown>[] }) {
         Query library
       </h2>
       <p className="mt-1 text-xs text-muted">
-        Searches the Search agent runs for this profile. Retired queries are skipped. Restoring a noise query marks it
-        untested so it is judged again.
+        LinkedIn and USAJobs run from the app. Indeed, ZipRecruiter, Glassdoor, and Google run on the JobSpy worker.
+        Retired queries are skipped. Restoring a noise query marks it untested so it is judged again.
       </p>
       {queries.length === 0 ? (
         <p className="mt-4 text-sm text-muted">No queries yet. Queries appear here as searches are added and run.</p>

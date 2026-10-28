@@ -13,6 +13,7 @@ import { z } from "zod";
 import { assertAllowed } from "@/lib/gates";
 import type { JobRow, ProfileRow, ScoreResult } from "@/lib/jobs/types";
 import { dedupeList, formatUsd } from "./prechecks";
+import { renderParsedResume, type ParsedResume } from "@/lib/resume/parsed";
 import type { CareerFacts, PrecheckResult } from "./types";
 
 /** Fast, inexpensive default. Override with SCORING_MODEL. */
@@ -37,6 +38,7 @@ export const SYSTEM_PROMPT = `You score job postings for one person's job search
 
 Rules you must follow:
 - Use only the career facts provided. Never invent experience, numbers, titles, employers, credentials, or dates.
+- A parsed resume, when one is attached, is a cached extraction of the resume the person supplied. Reuse it. Do not add facts that are not written there or in the career facts.
 - When you are unsure whether the person meets a requirement, list it as a gap. Do not guess in their favor.
 - requirements_met lists only requirements the posting states that the career facts clearly support. Quote the requirement briefly.
 - gaps lists requirements the career facts do not show, plus open questions (unclear pay, setting, schedule, contract status).
@@ -81,7 +83,13 @@ function section(text: string): string {
 }
 
 /** The user message. Stable content first, the posting last. */
-export function buildUserPrompt(job: JobRow, profile: ProfileRow, facts: CareerFacts | null, pre: PrecheckResult): string {
+export function buildUserPrompt(
+  job: JobRow,
+  profile: ProfileRow,
+  facts: CareerFacts | null,
+  pre: PrecheckResult,
+  parsed: ParsedResume | null = null,
+): string {
   const salary =
     job.salary_text ??
     (job.salary_min != null || job.salary_max != null
@@ -115,7 +123,15 @@ Other:
 ${section(facts?.other ?? "")}
 </career_facts>
 
-<pre_check_findings>
+${
+  parsed
+    ? `<parsed_resume>
+${renderParsedResume(parsed)}
+</parsed_resume>
+
+`
+    : ""
+}<pre_check_findings>
 Requirements met:
 ${list(pre.requirements_met)}
 Gaps:
@@ -164,6 +180,7 @@ export async function callScoringModel(
   facts: CareerFacts | null,
   pre: PrecheckResult,
   { client, model = DEFAULT_SCORING_MODEL }: ModelCallOptions,
+  parsed: ParsedResume | null = null,
 ): Promise<ModelScore> {
   assertAllowed("score");
 
@@ -172,7 +189,7 @@ export async function callScoringModel(
     max_tokens: 4000,
     output_config: { effort: "low", format: zodOutputFormat(ModelScoreSchema) },
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: buildUserPrompt(job, profile, facts, pre) }],
+    messages: [{ role: "user", content: buildUserPrompt(job, profile, facts, pre, parsed) }],
   });
 
   if (response.stop_reason === "refusal") throw new ScoringModelError("The model declined to score this posting.");

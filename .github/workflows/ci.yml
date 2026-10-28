@@ -35,3 +35,15 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Worker tests
+        # Stdlib only. JobSpy and the embedding model are not installed here.
+        run: python -m unittest discover -s worker/tests -v

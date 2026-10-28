@@ -137,11 +137,13 @@ describe("run_search", () => {
   it.each([
     ["indeed", "Indeed"],
     ["ziprecruiter", "ZipRecruiter"],
-  ] as const)("refuses %s queries as import only", async (source, label) => {
+    ["glassdoor", "Glassdoor"],
+    ["google", "Google Jobs"],
+  ] as const)("refuses %s queries because the JobSpy worker runs them", async (source, label) => {
     const services = fakeServices([], { getQuery: vi.fn(async () => makeQuery({ source })) });
     const result = await runTool({ name: "run_search", input: { query_id: QUERY_ID } }, makeCtx(services), fakeLogger().logger);
     expect(result.isError).toBe(true);
-    expect(result.content).toContain(`${label} is import only`);
+    expect(result.content).toContain(`${label} is not searched from here`);
     expect(services.runSearch).not.toHaveBeenCalled();
   });
 

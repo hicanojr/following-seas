@@ -11,6 +11,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { assertAllowed, type AllowedAction } from "@/lib/gates";
+import { isJobSpySource, jobSpySourceLabel } from "@/lib/jobs/types";
 import { isIsoDate } from "@/lib/tracker/dates";
 import { buildDraft, DRAFT_KINDS, DRAFT_NOTICE } from "./drafts";
 import { JOB_FILTERS, type ChiefDraft, type ChiefJob, type ChiefServices } from "./types";
@@ -118,7 +119,7 @@ export const CHIEF_TOOLS = [
     definition: {
       name: "run_search",
       description:
-        "Run one saved LinkedIn or USAJobs query and save new postings (deduplicated, noise filtered). LinkedIn runs return 25 to 50 results through the approved data source. Refuses retired queries and Indeed or ZipRecruiter queries, which are import only.",
+        "Run one saved LinkedIn or USAJobs query and save new postings (deduplicated, noise filtered). LinkedIn runs return 25 to 50 results through the approved data source. Refuses retired queries. Indeed, ZipRecruiter, Glassdoor, and Google are run by the JobSpy worker, not here.",
       input_schema: {
         type: "object",
         properties: { query_id: { type: "string", description: "The query id from list_queries." } },
@@ -135,10 +136,9 @@ export const CHIEF_TOOLS = [
           "This query is retired (marked noise or switched off), so it is not run. The person can un-retire it on the Profiles tab.",
         );
       }
-      if (query.source === "indeed" || query.source === "ziprecruiter") {
-        const name = query.source === "indeed" ? "Indeed" : "ZipRecruiter";
+      if (isJobSpySource(query.source)) {
         throw new ToolRefusal(
-          `${name} is import only. Its searches run elsewhere and the results come in through the Import jobs page on the Jobs tab.`,
+          `${jobSpySourceLabel(query.source)} is not searched from here. The JobSpy worker runs it. You can also import a file on the Jobs tab.`,
         );
       }
       const summary = await ctx.services.runSearch(query.id);

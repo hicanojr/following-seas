@@ -29,6 +29,8 @@ export function ScoreButton({ profileId, disabled }: { profileId: string; disabl
         error?: string;
         scored?: number;
         screenedOut?: number;
+        prefiltered?: number;
+        awaitingEmbedding?: number;
         failed?: unknown[];
       };
       if (!res.ok) {
@@ -39,6 +41,8 @@ export function ScoreButton({ profileId, disabled }: { profileId: string; disabl
       const failed = body.failed?.length ?? 0;
       const parts = [scored === 0 ? "No new jobs to score." : `Scored ${scored} job${scored === 1 ? "" : "s"}.`];
       if (body.screenedOut) parts.push(`${body.screenedOut} screened out.`);
+      if (body.prefiltered) parts.push(`${body.prefiltered} held back. Only the closest postings are scored.`);
+      if (body.awaitingEmbedding) parts.push(`${body.awaitingEmbedding} waiting on an embedding.`);
       if (failed) parts.push(`${failed} could not be scored.`);
       setStatus({ kind: "done", text: parts.join(" ") });
       startTransition(() => router.refresh());

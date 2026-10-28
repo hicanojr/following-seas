@@ -66,8 +66,8 @@ describe("runSearch", () => {
     expect(m.runs).toHaveLength(0);
   });
 
-  it("says Indeed and ZipRecruiter are import only", async () => {
-    for (const source of ["indeed", "ziprecruiter"] as const) {
+  it("does not run JobSpy sources from the app", async () => {
+    for (const source of ["indeed", "ziprecruiter", "glassdoor", "google"] as const) {
       const m = memoryStore({ queries: [query({ source })], profiles: [PROFILE] });
       await expect(runSearch({ userId: "u1", queryId: "q1" }, { store: m.store })).rejects.toBeInstanceOf(ImportOnlyError);
     }

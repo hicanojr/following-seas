@@ -32,15 +32,24 @@ describe("dailySearchCap", () => {
 });
 
 describe("planDailySearches", () => {
-  it("runs only LinkedIn and USAJobs; Indeed and ZipRecruiter stay import only", () => {
+  it("runs only LinkedIn and USAJobs; JobSpy boards are left to the worker", () => {
     const plan = planDailySearches(
-      [q("li"), q("usa", { source: "usajobs" }), q("in", { source: "indeed" }), q("zr", { source: "ziprecruiter" })],
+      [
+        q("li"),
+        q("usa", { source: "usajobs" }),
+        q("in", { source: "indeed" }),
+        q("zr", { source: "ziprecruiter" }),
+        q("gd", { source: "glassdoor" }),
+        q("gg", { source: "google" }),
+      ],
       { cap: 10, alreadyRunToday: 0, activeProfileIds: active, configured },
     );
     expect(plan.run.map((x) => x.id)).toEqual(["li", "usa"]);
     expect(plan.skipped).toEqual([
-      { queryId: "in", reason: "indeed is import only" },
-      { queryId: "zr", reason: "ziprecruiter is import only" },
+      { queryId: "in", reason: "indeed is run by the JobSpy worker" },
+      { queryId: "zr", reason: "ziprecruiter is run by the JobSpy worker" },
+      { queryId: "gd", reason: "glassdoor is run by the JobSpy worker" },
+      { queryId: "gg", reason: "google is run by the JobSpy worker" },
     ]);
   });
 
@@ -164,7 +173,14 @@ describe("runDailyForUser", () => {
 
   it("scores new jobs only when scoring is configured, with explicit job ids", async () => {
     const { client } = fakeSupabase(responder());
-    const scoreJobs = vi.fn(async () => ({ runId: "s1", scored: 1, screenedOut: 0, failed: [] }));
+    const scoreJobs = vi.fn(async () => ({
+      runId: "s1",
+      scored: 1,
+      screenedOut: 0,
+      prefiltered: 0,
+      awaitingEmbedding: 0,
+      failed: [],
+    }));
     const r = await runDailyForUser(USER, deps(client, { scoring: { scoreJobs, client: {} as never, model: "m" } }));
     expect(scoreJobs).toHaveBeenCalledWith(
       { userId: USER, profileId: "p1", jobIds: ["j-new"] },
