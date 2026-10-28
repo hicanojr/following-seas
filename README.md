@@ -121,3 +121,5 @@ worker/               JobSpy search, embeddings, resume parse (Python)
 ```
 
 CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests, and build on every pull request and on pushes to `main`.
+
+Gemini reviews a pull request when it is opened, and when an owner, member, or collaborator comments `@gemini-cli /review` (`.github/workflows/gemini-dispatch.yml` and `gemini-review.yml`). The workflow reads the repository secret `GEMINI_API_KEY`. Pull requests from forks are left for a person to review.
