@@ -46,3 +46,7 @@ __pycache__/
 
 # env files (keep the template)
 !.env.example
+
+# Gemini CLI review artifacts and Workload Identity credential files
+.gemini/
+gha-creds-*.json
