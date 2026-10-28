@@ -1,0 +1,7 @@
+# One-shot JobSpy pass. The container exits; cron or GitHub Actions starts it.
+# Create ../.env.local from ../.env.example before the first run. Never commit it.
+services:
+  jobspy:
+    build: .
+    env_file: ../.env.local
+    restart: "no"

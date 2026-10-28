@@ -19,10 +19,12 @@ Every user's data is private to them. Row Level Security enforces it in the data
 
 | Source | How | Enum value |
 | --- | --- | --- |
-| Indeed | Results are **imported**; searches run elsewhere | `indeed` |
-| ZipRecruiter | Results are **imported**; searches run elsewhere | `ziprecruiter` |
-| LinkedIn | Apify actor `curious_coder/linkedin-jobs-scraper`, 25 to 50 results per run | `linkedin` |
-| USAJobs | Official API (later) | `usajobs` |
+| Indeed | JobSpy worker (`python-jobspy`). Also importable by hand | `indeed` |
+| ZipRecruiter | JobSpy worker. Also importable by hand | `ziprecruiter` |
+| Glassdoor | JobSpy worker. Also importable by hand | `glassdoor` |
+| Google Jobs | JobSpy worker. Also importable by hand | `google` |
+| LinkedIn | Apify actor `curious_coder/linkedin-jobs-scraper`, 25 to 50 results per run. Never JobSpy, never an `li_at` cookie | `linkedin` |
+| USAJobs | Official API | `usajobs` |
 | Manual | Entered by the person | `manual` |
 
 ## Hard gates (non-negotiable)
@@ -82,7 +84,7 @@ Run lint, typecheck, test, and build before every commit. CI runs the same.
 ## Roadmap
 
 - **Phase 0, Foundation** (done): app shell and PWA basics, magic-link auth, schema with RLS, gates, seed, CI.
-- **Phase 1, Data sources** (decided: hybrid): Indeed and ZipRecruiter imports, LinkedIn via Apify (25 to 50 cap), USAJobs API later.
+- **Phase 1, Data sources** (decided: hybrid): Indeed, ZipRecruiter, Glassdoor, and Google via the JobSpy worker, LinkedIn via Apify (25 to 50 cap), USAJobs API. The app does not run JobSpy itself.
 - **Phase 2, Search and scoring**: Search agent runs the query library and updates query quality; Scoring agent fills `scores`.
 - **Phase 3, Shortlist and tracker**: keep/skip decisions, application tracking and follow-up reminders, plus import from existing `.xlsx` trackers.
 - **Phase 4, Chief of Staff**: chat and the daily Brief.

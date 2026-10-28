@@ -1,0 +1,38 @@
+name: JobSpy
+
+on:
+  schedule:
+    # 10:00 UTC, before the Vercel daily brief at 11:00 UTC.
+    - cron: "0 10 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jobspy
+  cancel-in-progress: false
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: worker/requirements.txt
+      - name: Install
+        working-directory: worker
+        run: pip install -r requirements.txt
+      - name: Search, embed, and cache the resume
+        # Repository root, so `python -m worker` finds the worker package.
+        run: python -m worker
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EMBEDDING_PROVIDER: local
+          EMBEDDING_MODEL: sentence-transformers/all-MiniLM-L6-v2

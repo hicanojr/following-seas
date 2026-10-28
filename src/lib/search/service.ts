@@ -2,7 +2,10 @@
  * Search agent services.
  *
  *   runSearch:  run one saved query (LinkedIn via Apify, or USAJobs) and save the results.
- *   importJobs: save postings imported from Indeed, ZipRecruiter, or a file.
+ *   importJobs: save postings imported from a file or pasted rows.
+ *
+ * Indeed, ZipRecruiter, Glassdoor, and Google are searched by the JobSpy worker,
+ * not here. This module still accepts imports of those postings.
  *
  * Both pass through the same steps: gate check, noise filter, dedupe within the
  * batch and against saved jobs, insert, and an agent_runs record. Nothing here
@@ -11,7 +14,7 @@
 
 import { dedupeKey } from "@/lib/dedupe";
 import { assertAllowed } from "@/lib/gates";
-import type { NormalizedJob } from "@/lib/jobs/types";
+import { isJobSpySource, jobSpySourceLabel, type NormalizedJob } from "@/lib/jobs/types";
 import { dedupeBatch, type DuplicateJob } from "./dedupe-batch";
 import {
   ImportOnlyError,
@@ -122,9 +125,10 @@ async function fetchForQuery(
         { apiKey: env.USAJOBS_API_KEY, userAgent: env.USAJOBS_USER_AGENT, fetch: deps.fetch },
       );
     case "indeed":
-      throw new ImportOnlyError("Indeed");
     case "ziprecruiter":
-      throw new ImportOnlyError("ZipRecruiter");
+    case "glassdoor":
+    case "google":
+      throw new ImportOnlyError(jobSpySourceLabel(query.source));
     default:
       throw new SearchError("not_searchable", `Queries for ${query.source} cannot be run.`, 400);
   }
@@ -132,8 +136,7 @@ async function fetchForQuery(
 
 /** Checks that need no network, so config errors surface before a run is logged. */
 function preflight(query: QueryRecord, env: SearchEnv) {
-  if (query.source === "indeed") throw new ImportOnlyError("Indeed");
-  if (query.source === "ziprecruiter") throw new ImportOnlyError("ZipRecruiter");
+  if (isJobSpySource(query.source)) throw new ImportOnlyError(jobSpySourceLabel(query.source));
   if (query.source === "linkedin" && !env.APIFY_TOKEN) {
     throw new MissingConfigError("APIFY_TOKEN", "LinkedIn search (Apify)");
   }

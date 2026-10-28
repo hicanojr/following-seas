@@ -79,7 +79,7 @@ describe("scoreJobs", () => {
 
     const outcome = await scoreJobs({ userId: profile.user_id, profileId: profile.id }, { supabase, client, model: "m" });
 
-    expect(outcome).toEqual({ runId: "run-1", scored: 2, screenedOut: 1, failed: [] });
+    expect(outcome).toEqual({ runId: "run-1", scored: 2, screenedOut: 1, prefiltered: 0, awaitingEmbedding: 0, failed: [] });
     expect(create).toHaveBeenCalledTimes(1);
 
     const upserts = calls.filter((c) => c.table === "scores" && c.op === "upsert");
@@ -119,5 +119,40 @@ describe("scoreJobs", () => {
     await expect(
       scoreJobs({ userId: "u", profileId: "p" }, { supabase, client: {} as ScoringClient }),
     ).rejects.toMatchObject({ status: 404 });
+  });
+
+  it("sends only the top quarter by resume similarity, and reuses the cached parse", async () => {
+    const profile = makeProfile();
+    const jobs = ["best", "mid", "low", "old"].map((id, index) =>
+      makeJob({ id, title: `Role ${id}`, description: `Posting ${index}` }),
+    );
+    const { supabase } = fakeSupabase({
+      profiles: [profile],
+      career_facts: [],
+      resumes: [{ parsed: { skills: ["HPLC"] }, embedded_at: "2026-10-01T00:00:00Z" }],
+      job_resume_similarity: [
+        { job_id: "best", similarity: 0.91 },
+        { job_id: "mid", similarity: 0.4 },
+        { job_id: "low", similarity: 0.2 },
+        { job_id: "old", similarity: 0.05 },
+      ],
+      scores: [],
+      jobs,
+    });
+    const create = vi.fn().mockResolvedValue({
+      stop_reason: "end_turn",
+      content: [{ type: "text", text: JSON.stringify({ fit: 6, reason: "Close enough.", requirements_met: [], gaps: [], must_haves_met: [] }) }],
+    });
+    const outcome = await scoreJobs(
+      { userId: profile.user_id, profileId: profile.id },
+      { supabase, client: { messages: { create } } as unknown as ScoringClient },
+    );
+    expect(outcome.scored).toBe(1);
+    expect(outcome.prefiltered).toBe(3);
+    expect(outcome.awaitingEmbedding).toBe(0);
+    expect(create).toHaveBeenCalledTimes(1);
+    const prompt = (create.mock.calls[0] as unknown as [{ messages: { content: string }[] }])[0].messages[0].content;
+    expect(prompt).toContain("HPLC");
+    expect(prompt).toContain("Role best");
   });
 });

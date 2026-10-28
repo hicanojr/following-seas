@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { resumeContentHash } from "@/lib/resume/hash";
 import { formInput, parseProfileForm } from "@/lib/shortlist/profile-form";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,7 +26,40 @@ async function session() {
   if (!supabase) return { error: "Supabase is not configured on this server." } as const;
   const { data } = await supabase.auth.getUser();
   if (!data.user) return { error: "Your session has ended. Sign in again." } as const;
-  return { supabase } as const;
+  return { supabase, userId: data.user.id } as const;
+}
+
+export interface ResumeFormState {
+  status: "idle" | "saved" | "error";
+  message: string;
+}
+
+const MAX_RESUME_CHARS = 80_000;
+
+/** Save the base resume. The text is the person's. The worker parses and embeds it later. */
+export async function saveResume(_prev: ResumeFormState, formData: FormData): Promise<ResumeFormState> {
+  const s = await session();
+  if ("error" in s) return { status: "error", message: s.error as string };
+  const { supabase, userId } = s;
+  const text = String(formData.get("raw_text") ?? "").trim();
+  if (!text) return { status: "error", message: "Paste your resume before saving." };
+  if (text.length > MAX_RESUME_CHARS) {
+    return { status: "error", message: "That resume is too long to store. Shorten it and try again." };
+  }
+  const { error } = await supabase.from("resumes").upsert(
+    { user_id: userId, raw_text: text, content_hash: resumeContentHash(text) },
+    { onConflict: "user_id" },
+  );
+  if (error) {
+    console.error("resume save failed", error.message);
+    return {
+      status: "error",
+      message: "Could not save the resume. If this install is new, run the latest database migration and try again.",
+    };
+  }
+  await audit(supabase, "resume_save", "resumes", userId, { chars: text.length });
+  refresh();
+  return { status: "saved", message: "Saved. The next JobSpy run parses it if the text changed, then reuses that JSON." };
 }
 
 type Supabase = NonNullable<Awaited<ReturnType<typeof createClient>>>;

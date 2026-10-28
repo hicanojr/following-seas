@@ -151,16 +151,22 @@ async function JobsContent({ searchParams }: { searchParams: SearchParams }) {
       gaps: strings(s.gaps),
       unmetMustHaves: strings(s.unmet_must_haves),
       dealBreakerHit: (s.deal_breaker_hit as string | null) ?? null,
+      keywordGaps: [],
     });
   }
 
   const scoredIds = scored.map((j) => j.jobId);
-  const [{ data: decisionRows }, { data: applicationRows }] = scoredIds.length
+  const [{ data: decisionRows }, { data: applicationRows }, { data: gapRows }] = scoredIds.length
     ? await Promise.all([
         supabase.from("decisions").select("job_id, decision, reason").eq("profile_id", profile.id).in("job_id", scoredIds),
         supabase.from("applications").select("job_id, status").in("job_id", scoredIds),
+        supabase.from("keyword_gaps").select("job_id, missing").in("job_id", scoredIds),
       ])
-    : [{ data: [] as Record<string, unknown>[] }, { data: [] as Record<string, unknown>[] }];
+    : [
+        { data: [] as Record<string, unknown>[] },
+        { data: [] as Record<string, unknown>[] },
+        { data: [] as Record<string, unknown>[] },
+      ];
 
   const decisions = new Map<string, CurrentDecision>();
   for (const d of decisionRows ?? []) {
@@ -169,6 +175,8 @@ async function JobsContent({ searchParams }: { searchParams: SearchParams }) {
     }
   }
   const trackerStatus = new Map((applicationRows ?? []).map((a) => [a.job_id as string, String(a.status)]));
+  const keywordGaps = new Map((gapRows ?? []).map((row) => [row.job_id as string, strings(row.missing)]));
+  for (const job of scored) job.keywordGaps = keywordGaps.get(job.jobId) ?? [];
 
   const groups = groupJobs(scored, decisions);
   const view = parseJobView(params.view);
@@ -222,7 +230,9 @@ async function JobsContent({ searchParams }: { searchParams: SearchParams }) {
           {unscored > 0
             ? `${unscored} job${unscored === 1 ? "" : "s"} not yet scored for this profile.`
             : "Every job on file has a score for this profile."}{" "}
-          Scores use only your career facts. Agents never apply for you.
+          Scores use only your career facts and, when you have saved a resume, the cached resume. Once that resume has
+          an embedding, only the closest quarter of postings are sent for a score. Keyword lists are suggestions only.
+          Agents never apply for you.
         </p>
         <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
           <ScoreButton profileId={profile.id} />

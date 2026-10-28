@@ -15,6 +15,8 @@ export interface ScoredJob {
   gaps: string[];
   unmetMustHaves: string[];
   dealBreakerHit: string | null;
+  /** Required terms on the posting that were not found in the resume. Suggestions only. */
+  keywordGaps: string[];
 }
 
 const EASY_APPLY_LABEL: Record<EasyApply, string> = { yes: "Yes", no: "No", unknown: "Unknown" };
@@ -56,6 +58,19 @@ function List({ title, items, tone }: { title: string; items: string[]; tone: "m
   );
 }
 
+function KeywordSuggestions({ items }: { items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-3 rounded-xl border border-line bg-background p-3">
+      <List title="Keyword suggestions" items={items} tone="gap" />
+      <p className="mt-2 text-xs text-muted">
+        Required terms on the posting that were not found in your resume. Suggestions only. A missing word is not a
+        verdict, and nothing is sent.
+      </p>
+    </div>
+  );
+}
+
 /** `children` renders under the card, for the person's Keep or Skip controls. */
 export function JobCard({ job, children }: { job: ScoredJob; children?: ReactNode }) {
   const href = safeHttpUrl(job.url);
@@ -89,6 +104,7 @@ export function JobCard({ job, children }: { job: ScoredJob; children?: ReactNod
       <div className="mt-3 space-y-3">
         <List title="Requirements met" items={job.requirementsMet} tone="met" />
         <List title="Gaps" items={job.gaps} tone="gap" />
+        <KeywordSuggestions items={job.keywordGaps} />
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3 text-sm">
@@ -127,6 +143,7 @@ export function ScreenedOutCard({ job, children }: { job: ScoredJob; children?: 
           Open posting
         </a>
       ) : null}
+      <KeywordSuggestions items={job.keywordGaps} />
       {children}
     </li>
   );

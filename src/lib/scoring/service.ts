@@ -9,7 +9,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { assertAllowed } from "@/lib/gates";
 import type { JobRow, ProfileRow, ScoreResult } from "@/lib/jobs/types";
+import { isParsedResume, type ParsedResume } from "@/lib/resume/parsed";
 import { callScoringModel, mergeResult, screenedOutResult, type ScoringClient } from "./model";
+import { decidePrefilter, type RankedJob } from "./prefilter";
 import { runPrechecks } from "./prechecks";
 import type { CareerFacts } from "./types";
 
@@ -36,6 +38,10 @@ export interface ScoreJobsOutcome {
   runId: string | null;
   scored: number;
   screenedOut: number;
+  /** Postings below the similarity cutoff. They were not sent to Claude. */
+  prefiltered: number;
+  /** Postings with no embedding yet, held until the worker embeds them. */
+  awaitingEmbedding: number;
   failed: { jobId: string; error: string }[];
 }
 
@@ -118,10 +124,11 @@ export async function scoreOneJob(
   profile: ProfileRow,
   facts: CareerFacts | null,
   deps: Pick<ScoreJobsDeps, "client" | "model">,
+  parsed: ParsedResume | null = null,
 ): Promise<ScoreResult> {
   const pre = runPrechecks(job, profile, facts);
   if (pre.deal_breaker_hit) return screenedOutResult(pre);
-  const modelScore = await callScoringModel(job, profile, facts, pre, { client: deps.client, model: deps.model });
+  const modelScore = await callScoringModel(job, profile, facts, pre, { client: deps.client, model: deps.model }, parsed);
   return mergeResult(pre, modelScore);
 }
 
@@ -155,7 +162,16 @@ export async function scoreJobs(input: ScoreJobsInput, deps: ScoreJobsDeps): Pro
       }
     : null;
 
-  const jobs = await loadJobs(supabase, userId, profileId, input.jobIds);
+  const resume = await loadResumeCache(supabase, userId);
+  const parsed = isParsedResume(resume?.parsed) ? resume.parsed : null;
+  const selection = resume?.embeddedAt
+    ? await selectEmbeddedJobs(supabase, userId, profileId, input.jobIds)
+    : {
+        jobs: await loadJobs(supabase, userId, profileId, input.jobIds),
+        prefiltered: 0,
+        awaitingEmbedding: 0,
+      };
+  const jobs = selection.jobs;
 
   const { data: run, error: runError } = await supabase
     .from("agent_runs")
@@ -163,19 +179,33 @@ export async function scoreJobs(input: ScoreJobsInput, deps: ScoreJobsDeps): Pro
       user_id: userId,
       agent: AGENT_NAME,
       status: "running",
-      input: { profileId, jobIds: input.jobIds ?? null, jobCount: jobs.length, model: deps.model ?? null },
+      input: {
+        profileId,
+        jobIds: input.jobIds ?? null,
+        jobCount: jobs.length,
+        model: deps.model ?? null,
+        prefilter: resume?.embeddedAt ? "top_25" : "off",
+        parsedResume: Boolean(parsed),
+      },
     })
     .select("id")
     .single();
   if (runError) throw new ScoringServiceError(`Could not start the scoring run: ${runError.message}`);
   const runId: string | null = run?.id ?? null;
 
-  const outcome: ScoreJobsOutcome = { runId, scored: 0, screenedOut: 0, failed: [] };
+  const outcome: ScoreJobsOutcome = {
+    runId,
+    scored: 0,
+    screenedOut: 0,
+    prefiltered: selection.prefiltered,
+    awaitingEmbedding: selection.awaitingEmbedding,
+    failed: [],
+  };
 
   try {
     await mapWithConcurrency(jobs, deps.concurrency ?? DEFAULT_CONCURRENCY, async (job) => {
       try {
-        const result = await scoreOneJob(job, profile, facts, deps);
+        const result = await scoreOneJob(job, profile, facts, deps, parsed);
         const { error } = await supabase.from("scores").upsert(
           {
             user_id: userId,
@@ -199,7 +229,13 @@ export async function scoreJobs(input: ScoreJobsInput, deps: ScoreJobsDeps): Pro
       .from("agent_runs")
       .update({
         status,
-        output: { scored: outcome.scored, screenedOut: outcome.screenedOut, failed: outcome.failed },
+        output: {
+          scored: outcome.scored,
+          screenedOut: outcome.screenedOut,
+          prefiltered: outcome.prefiltered,
+          awaitingEmbedding: outcome.awaitingEmbedding,
+          failed: outcome.failed,
+        },
         error: outcome.failed.length ? `${outcome.failed.length} job(s) could not be scored` : null,
         finished_at: new Date().toISOString(),
       })
@@ -210,7 +246,14 @@ export async function scoreJobs(input: ScoreJobsInput, deps: ScoreJobsDeps): Pro
       action: "score",
       entity_table: "profiles",
       entity_id: profileId,
-      details: { runId, scored: outcome.scored, screenedOut: outcome.screenedOut, failed: outcome.failed.length },
+      details: {
+        runId,
+        scored: outcome.scored,
+        screenedOut: outcome.screenedOut,
+        prefiltered: outcome.prefiltered,
+        awaitingEmbedding: outcome.awaitingEmbedding,
+        failed: outcome.failed.length,
+      },
     });
   }
 
@@ -243,4 +286,80 @@ async function loadJobs(
   const { data, error } = await query;
   if (error) throw new ScoringServiceError(`Could not load jobs: ${error.message}`);
   return (data ?? []).map((row: Record<string, unknown>) => toJobRow(row));
+}
+
+interface ResumeCache {
+  parsed: unknown;
+  embeddedAt: string | null;
+}
+
+async function loadResumeCache(supabase: SupabaseClient, userId: string): Promise<ResumeCache | null> {
+  const { data, error } = await supabase
+    .from("resumes")
+    .select("parsed, embedded_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new ScoringServiceError(`Could not load the resume: ${error.message}`);
+  if (!data) return null;
+  const embeddedAt = typeof data.embedded_at === "string" && data.embedded_at ? data.embedded_at : null;
+  return { parsed: data.parsed, embeddedAt };
+}
+
+async function loadSimilarities(supabase: SupabaseClient, userId: string): Promise<RankedJob[]> {
+  const { data, error } = await supabase.from("job_resume_similarity").select("job_id, similarity").eq("user_id", userId);
+  if (error) throw new ScoringServiceError(`Could not rank postings: ${error.message}`);
+  return (data ?? []).flatMap((row: { job_id?: unknown; similarity?: unknown }) => {
+    if (typeof row.job_id !== "string" || typeof row.similarity !== "number" || !Number.isFinite(row.similarity)) return [];
+    return [{ jobId: row.job_id, similarity: row.similarity }];
+  });
+}
+
+/** Unscored job ids, or the ids the caller named. */
+async function candidateIds(
+  supabase: SupabaseClient,
+  userId: string,
+  profileId: string,
+  jobIds: string[] | undefined,
+): Promise<string[]> {
+  if (jobIds && jobIds.length > 0) return jobIds;
+  const { data: jobRows, error: jobError } = await supabase.from("jobs").select("id").eq("user_id", userId).is("deleted_at", null);
+  if (jobError) throw new ScoringServiceError(`Could not load jobs: ${jobError.message}`);
+  const { data: scored, error: scoreError } = await supabase
+    .from("scores")
+    .select("job_id")
+    .eq("user_id", userId)
+    .eq("profile_id", profileId);
+  if (scoreError) throw new ScoringServiceError(`Could not load existing scores: ${scoreError.message}`);
+  const done = new Set((scored ?? []).map((row: { job_id: string }) => row.job_id));
+  return (jobRows ?? []).map((row: { id: string }) => row.id).filter((id) => !done.has(id));
+}
+
+/**
+ * Top ~25% of the whole library by resume similarity, among the candidates.
+ * Postings without a vector wait. Postings below the cutoff are not sent to Claude.
+ */
+async function selectEmbeddedJobs(
+  supabase: SupabaseClient,
+  userId: string,
+  profileId: string,
+  jobIds: string[] | undefined,
+): Promise<{ jobs: JobRow[]; prefiltered: number; awaitingEmbedding: number }> {
+  const ranked = await loadSimilarities(supabase, userId);
+  const decision = decidePrefilter(await candidateIds(supabase, userId, profileId, jobIds), ranked, MAX_JOBS_PER_RUN);
+  if (decision.selectedIds.length === 0) {
+    return { jobs: [], prefiltered: decision.prefiltered, awaitingEmbedding: decision.awaitingEmbedding };
+  }
+  const { data, error } = await supabase
+    .from("jobs")
+    .select("*")
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .in("id", decision.selectedIds);
+  if (error) throw new ScoringServiceError(`Could not load jobs: ${error.message}`);
+  const order = new Map(decision.selectedIds.map((id, index) => [id, index]));
+  const jobs = (data ?? [])
+    .map((row: Record<string, unknown>) => toJobRow(row))
+    .filter((job) => order.has(job.id))
+    .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+  return { jobs, prefiltered: decision.prefiltered, awaitingEmbedding: decision.awaitingEmbedding };
 }

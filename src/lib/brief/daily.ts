@@ -5,7 +5,8 @@
  * Called by the cron route with a service role client, which bypasses Row
  * Level Security. Every query here therefore filters by the explicit userId,
  * and the Search agent is given `userScopedSearchStore`, never the RLS-based
- * store. Indeed and ZipRecruiter stay import only and are never run here.
+ * store. Indeed, ZipRecruiter, Glassdoor, and Google are run by the JobSpy
+ * worker, not here.
  *
  * Nothing here applies, uses Easy Apply, sends email or messages, or notifies
  * anyone. The brief is stored for the person to read in the app.
@@ -13,6 +14,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { assertAllowed } from "@/lib/gates";
+import { isJobSpySource } from "@/lib/jobs/types";
 import type { SearchDeps, SearchEnv, SearchSummary } from "@/lib/search/service";
 import type { ScoreJobsDeps, ScoreJobsInput, ScoreJobsOutcome } from "@/lib/scoring/service";
 import { MAX_JOBS_PER_RUN } from "@/lib/scoring/service";
@@ -23,7 +25,7 @@ import { userScopedSearchStore } from "./scoped-search-store";
 export const BRIEF_AGENT = "brief";
 export const DEFAULT_DAILY_SEARCH_CAP = 10;
 export const MAX_DAILY_SEARCH_CAP = 50;
-/** Sources the daily run may search. Indeed and ZipRecruiter are import only. */
+/** Sources the daily run may search. JobSpy boards are run by the worker, not here. */
 export const SCHEDULED_SOURCES = ["linkedin", "usajobs"] as const;
 
 /** DAILY_SEARCH_CAP from the environment, or the default; clamped to 0..50. */
@@ -67,6 +69,10 @@ export function planDailySearches<Q extends PlannableQuery>(
   for (const q of queries) {
     if (q.retired) continue;
     if (!opts.activeProfileIds.has(q.profile_id)) continue;
+    if (isJobSpySource(q.source)) {
+      skipped.push({ queryId: q.id, reason: `${q.source} is run by the JobSpy worker` });
+      continue;
+    }
     if (q.source !== "linkedin" && q.source !== "usajobs") {
       skipped.push({ queryId: q.id, reason: `${q.source} is import only` });
       continue;

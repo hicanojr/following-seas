@@ -1,0 +1,6 @@
+# Fair Winds JobSpy worker, for a future VPS.
+# 10:00 UTC, before the Vercel daily brief at 11:00 UTC.
+# Install with: sudo cp worker/cron.example /etc/cron.d/fairwinds-jobspy
+#
+# The image does not stay running. Each line starts one pass and the container exits.
+0 10 * * * root cd /opt/following-seas && docker compose -f worker/docker-compose.yml run --rm jobspy >> /var/log/fairwinds-jobspy.log 2>&1

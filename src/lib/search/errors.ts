@@ -25,12 +25,12 @@ export class MissingConfigError extends SearchError {
   }
 }
 
-/** Indeed and ZipRecruiter searches run elsewhere; their results are imported. */
+/** Indeed, ZipRecruiter, Glassdoor, and Google run in the JobSpy worker, not in the app. */
 export class ImportOnlyError extends SearchError {
   constructor(source: string) {
     super(
       "import_only",
-      `${source} is import only. Run the search in Claude and import the results on the Import jobs page.`,
+      `${source} is not searched from the app. The JobSpy worker runs Indeed, ZipRecruiter, Glassdoor, and Google, or you can import a file on the Import jobs page.`,
       400,
     );
   }

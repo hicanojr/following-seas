@@ -76,6 +76,14 @@ describe("rowToJob", () => {
     expect(rowToJob({ Company: "X" })).toEqual({ ok: false, reason: "No title" });
   });
 
+  it("keeps a JobSpy direct link when the board link is blank, and names Glassdoor", () => {
+    const row = rowToJob(
+      { title: "Lab Director", job_url: "", job_url_direct: "https://hospital.example/jobs/9", source: "Glassdoor" },
+      { defaultSource: "indeed" },
+    );
+    expect(row.ok && row.job).toMatchObject({ url: "https://hospital.example/jobs/9", source: "glassdoor" });
+  });
+
   it("uses the row's source, else the default", () => {
     const a = rowToJob({ title: "A", source: "ZipRecruiter" }, { defaultSource: "indeed" });
     const b = rowToJob({ title: "B", source: "Monster" }, { defaultSource: "indeed" });

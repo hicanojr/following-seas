@@ -17,6 +17,8 @@ type Status = "idle" | "working" | "done" | "error";
 const SOURCES = [
   { value: "indeed", label: "Indeed" },
   { value: "ziprecruiter", label: "ZipRecruiter" },
+  { value: "glassdoor", label: "Glassdoor" },
+  { value: "google", label: "Google Jobs" },
   { value: "linkedin", label: "LinkedIn" },
   { value: "usajobs", label: "USAJobs" },
   { value: "manual", label: "Other or mixed" },

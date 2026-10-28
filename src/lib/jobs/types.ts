@@ -4,7 +4,28 @@
  * Column names match supabase/migrations/0001_init.sql.
  */
 
-export type JobSource = "indeed" | "ziprecruiter" | "linkedin" | "usajobs" | "manual";
+export const JOB_SOURCES = ["indeed", "ziprecruiter", "glassdoor", "google", "linkedin", "usajobs", "manual"] as const;
+export type JobSource = (typeof JOB_SOURCES)[number];
+
+/** Boards the JobSpy worker searches. The app does not run these, and JobSpy never searches LinkedIn. */
+export const JOBSPY_SOURCES = ["indeed", "ziprecruiter", "glassdoor", "google"] as const;
+export type JobSpySource = (typeof JOBSPY_SOURCES)[number];
+
+const JOBSPY_LABEL: Record<JobSpySource, string> = {
+  indeed: "Indeed",
+  ziprecruiter: "ZipRecruiter",
+  glassdoor: "Glassdoor",
+  google: "Google Jobs",
+};
+
+export function isJobSpySource(source: string): source is JobSpySource {
+  return (JOBSPY_SOURCES as readonly string[]).includes(source);
+}
+
+export function jobSpySourceLabel(source: JobSpySource): string {
+  return JOBSPY_LABEL[source];
+}
+
 export type EasyApply = "yes" | "no" | "unknown";
 
 /** A posting as the Search agent hands it over, before it has a database id. */

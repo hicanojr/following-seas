@@ -57,7 +57,7 @@ const HEADER_ALIASES: Record<JobField, string[]> = {
   ],
   salary_min: ["salarymin", "minsalary", "paymin", "minpay"],
   salary_max: ["salarymax", "maxsalary", "paymax", "maxpay"],
-  url: ["url", "link", "joburl", "joblink", "postingurl", "viewjoburl", "href", "positionuri"],
+  url: ["url", "link", "joburl", "joblink", "joburldirect", "directurl", "postingurl", "viewjoburl", "href", "positionuri"],
   description: ["description", "jobdescription", "descriptiontext", "summary", "snippet"],
   requirements: [
     "requirements",
@@ -99,6 +99,9 @@ const SOURCES: Record<string, JobSource> = {
   indeed: "indeed",
   ziprecruiter: "ziprecruiter",
   zip: "ziprecruiter",
+  glassdoor: "glassdoor",
+  google: "google",
+  googlejobs: "google",
   linkedin: "linkedin",
   usajobs: "usajobs",
   manual: "manual",
