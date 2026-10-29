@@ -83,6 +83,7 @@ function escapeRegExp(s: string): string {
  */
 export function matchNoise(title: string, keywords: readonly string[]): string | null {
   for (const k of keywords) {
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- keyword is regex-escaped, so the pattern is a literal match with no backtracking risk
     const pattern = new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(k.toLowerCase())}s?(?:$|[^a-z0-9])`, "i");
     if (pattern.test(title.toLowerCase())) return k;
   }
