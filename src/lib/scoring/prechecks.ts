@@ -37,6 +37,7 @@ export function containsPhrase(text: string, phrase: string): boolean {
   const body = escapeRegExp(p).replace(/ /g, "\\s+");
   const start = /^\w/.test(p) ? "\\b" : "";
   const end = /\w$/.test(p) ? "\\b" : "";
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- phrase is regex-escaped, so the pattern is a literal match with no backtracking risk
   return new RegExp(`${start}${body}${end}`, "i").test(text);
 }
 

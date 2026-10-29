@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import urllib.request
+from urllib.parse import urlparse
 
 EMBEDDING_DIM = 384
 DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
@@ -35,6 +36,9 @@ def _embed_local(texts: list[str], model_name: str) -> list[list[float]]:
 
 
 def _embed_api(texts: list[str], url: str, api_key: str, model_name: str) -> list[list[float]]:
+    # urlopen also accepts file:// and other schemes; only send the API key over http(s).
+    if urlparse(url).scheme not in ("http", "https"):
+        raise ValueError("EMBEDDING_API_URL must be an http(s) URL")
     payload = json.dumps({"model": model_name, "input": texts}).encode("utf-8")
     request = urllib.request.Request(
         url,
@@ -42,6 +46,7 @@ def _embed_api(texts: list[str], url: str, api_key: str, model_name: str) -> lis
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
         method="POST",
     )
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected -- scheme is checked to be http(s) above
     with urllib.request.urlopen(request, timeout=60) as response:
         body = json.loads(response.read().decode("utf-8"))
     data = body.get("data") or []

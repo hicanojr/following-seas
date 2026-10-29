@@ -24,6 +24,7 @@ export default function ConfirmPage() {
     }
     supabase.auth
       .setSession({ access_token: accessToken, refresh_token: refreshToken })
+      // nosemgrep: javascript.browser.security.open-redirect.js-open-redirect -- next comes from safeNext, which only returns same-site paths
       .then(({ error }) => window.location.replace(error ? "/login?error=link" : next));
   }, []);
 
