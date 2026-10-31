@@ -13,9 +13,6 @@ on:
   pull_request_review:
     types:
       - 'submitted'
-  pull_request:
-    types:
-      - 'opened'
   issue_comment:
     types:
       - 'created'
@@ -45,19 +42,13 @@ jobs:
           env | grep '^DEBUG_'
 
   dispatch:
-    # Same-repo pull requests are reviewed when they open.
-    # A comment or review reviews only when an owner, member, or collaborator
-    # starts it with "@gemini-cli /review". Fork pull requests are skipped so
-    # this workflow never exposes GEMINI_API_KEY to untrusted code.
+    # Manual final review only. An owner, member, or collaborator requests it
+    # after every other gate passes and edits are complete.
     if: |-
-      (
-        github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false
-      ) || (
-        github.event.sender.type == 'User' &&
-        startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli') &&
-        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association)
-      )
+      github.event.sender.type == 'User' &&
+      startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body || '', '@gemini-cli /review') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association) &&
+      (github.event_name != 'issue_comment' || github.event.issue.pull_request)
     runs-on: 'ubuntu-latest'
     permissions:
       contents: 'read'
@@ -85,17 +76,13 @@ jobs:
         id: 'extract_command'
         uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea' # ratchet:actions/github-script@v7
         env:
-          EVENT_TYPE: '${{ github.event_name }}.${{ github.event.action }}'
           REQUEST: '${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}'
         with:
           script: |
-            const eventType = process.env.EVENT_TYPE;
             const request = process.env.REQUEST || '';
             core.setOutput('request', request);
 
-            if (eventType === 'pull_request.opened') {
-              core.setOutput('command', 'review');
-            } else if (request.startsWith('@gemini-cli /review')) {
+            if (request.startsWith('@gemini-cli /review')) {
               core.setOutput('command', 'review');
               const additionalContext = request.replace(/^@gemini-cli \/review/, '').trim();
               core.setOutput('additional_context', additionalContext);
