@@ -45,6 +45,17 @@ class SupabaseStore:
         for row in (queries.data or []) + (resumes.data or []):
             if row.get("user_id"):
                 found.add(row["user_id"])
+        # No brief_settings row means the daily run is on; only an explicit false opts out.
+        # Scope small queries to candidates so PostgREST row caps cannot omit an opt-out.
+        for user_ids in _chunks(sorted(found), 100):
+            paused = (
+                self.sb.table("brief_settings")
+                .select("user_id")
+                .in_("user_id", user_ids)
+                .eq("daily_run", False)
+                .execute()
+            )
+            found -= {row["user_id"] for row in (paused.data or []) if row.get("user_id")}
         return sorted(found)
 
     def get_resume(self, user_id: str) -> dict | None:

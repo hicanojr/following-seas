@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import unittest
+from types import SimpleNamespace
 
 from worker.config import Config, ConfigError
 from worker.dedupe import dedupe_key, merge_batch
@@ -16,6 +17,7 @@ from worker.resume_parse import needs_parse, sanitize_resume
 from worker.run import RunDeps, run_once
 from worker.salary import annual_pay, salary_bounds
 from worker.scrape import build_scrape_kwargs, normalize_row, scrape_jobspy
+from worker.supabase_store import SupabaseStore
 from worker.urls import http_url, posting_url
 
 
@@ -451,6 +453,110 @@ class RunTests(unittest.TestCase):
         run_once(deps)
         self.assertEqual(len(parses), 1)
         self.assertEqual(len(scrapes), 2)
+
+    def test_all_searches_failing_increments_the_failed_count(self) -> None:
+        store = FakeStore()
+
+        def scrape(_kwargs: dict) -> list[dict]:
+            raise RuntimeError("search unavailable")
+
+        config = Config.from_env(
+            {
+                "SUPABASE_URL": "https://example.supabase.co",
+                "SUPABASE_SERVICE_ROLE_KEY": "service-role",
+                "ANTHROPIC_API_KEY": "test-key",
+            }
+        )
+        deps = RunDeps(
+            config=config,
+            store=store,
+            scrape=scrape,
+            embed=lambda texts: [_vector() for _ in texts],
+            parse_resume=lambda _text: sanitize_resume({"skills": [], "credentials": []}),
+        )
+
+        result = run_once(deps)
+
+        self.assertEqual(result["failed"], 1)
+        self.assertEqual(result["summaries"][0]["status"], "failed")
+
+
+class _FakeQuery:
+    """Just enough of the supabase-py query chain to filter in-memory rows."""
+
+    def __init__(self, rows: list[dict], require_user_scope: bool = False, user_scoped: bool = False) -> None:
+        self.rows = rows
+        self.require_user_scope = require_user_scope
+        self.user_scoped = user_scoped
+
+    def select(self, *_args: object) -> "_FakeQuery":
+        return self
+
+    def limit(self, _n: int) -> "_FakeQuery":
+        return self
+
+    def eq(self, column: str, value: object) -> "_FakeQuery":
+        return _FakeQuery(
+            [r for r in self.rows if r.get(column) == value],
+            self.require_user_scope,
+            self.user_scoped or column == "user_id",
+        )
+
+    def in_(self, column: str, values: list) -> "_FakeQuery":
+        if self.require_user_scope and column == "user_id" and len(values) > 100:
+            raise AssertionError("brief_settings query must use bounded user batches")
+        return _FakeQuery(
+            [r for r in self.rows if r.get(column) in values],
+            self.require_user_scope,
+            self.user_scoped or column == "user_id",
+        )
+
+    def execute(self) -> SimpleNamespace:
+        if self.require_user_scope and not self.user_scoped:
+            raise AssertionError("brief_settings query must be scoped to candidate users")
+        return SimpleNamespace(data=self.rows)
+
+
+class _FakeClient:
+    def __init__(self, tables: dict[str, list[dict]]) -> None:
+        self.tables = tables
+
+    def table(self, name: str) -> _FakeQuery:
+        return _FakeQuery(self.tables.get(name, []), require_user_scope=name == "brief_settings")
+
+
+class DailyRunOptOutTests(unittest.TestCase):
+    """brief_settings.daily_run = false keeps a person out of the scheduled worker."""
+
+    def _store(self, settings: list[dict], only_user_id: str | None = None) -> SupabaseStore:
+        store = SupabaseStore.__new__(SupabaseStore)  # skip create_client; no network
+        store.only_user_id = only_user_id
+        store.sb = _FakeClient(
+            {
+                "queries": [{"user_id": "u-on", "source": "indeed", "retired": False},
+                            {"user_id": "u-off", "source": "indeed", "retired": False},
+                            {"user_id": "u-none", "source": "google", "retired": False}],
+                "resumes": [{"user_id": "u-resume-only"}],
+                "brief_settings": settings,
+            }
+        )
+        return store
+
+    def test_daily_run_false_is_excluded(self) -> None:
+        store = self._store([{"user_id": "u-off", "daily_run": False}])
+        self.assertEqual(store.list_user_ids(), ["u-none", "u-on", "u-resume-only"])
+
+    def test_daily_run_true_is_included(self) -> None:
+        store = self._store([{"user_id": "u-off", "daily_run": True}])
+        self.assertIn("u-off", store.list_user_ids())
+
+    def test_missing_settings_row_keeps_the_default_on(self) -> None:
+        store = self._store([])
+        self.assertEqual(store.list_user_ids(), ["u-none", "u-off", "u-on", "u-resume-only"])
+
+    def test_explicit_user_run_ignores_the_opt_out(self) -> None:
+        store = self._store([{"user_id": "u-off", "daily_run": False}], only_user_id="u-off")
+        self.assertEqual(store.list_user_ids(), ["u-off"])
 
 
 if __name__ == "__main__":
