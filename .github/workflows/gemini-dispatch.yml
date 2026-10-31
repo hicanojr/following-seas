@@ -53,6 +53,7 @@ jobs:
     permissions:
       contents: 'read'
       issues: 'write'
+      pull-requests: 'write'
     outputs:
       command: '${{ steps.extract_command.outputs.command }}'
       request: '${{ steps.extract_command.outputs.request }}'
@@ -114,6 +115,7 @@ jobs:
     permissions:
       contents: 'read'
       issues: 'write'
+      pull-requests: 'write'
     steps:
       - name: 'Send failure comment'
         env:
