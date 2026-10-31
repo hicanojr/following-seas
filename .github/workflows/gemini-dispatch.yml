@@ -53,7 +53,6 @@ jobs:
     permissions:
       contents: 'read'
       issues: 'write'
-      pull-requests: 'write'
     outputs:
       command: '${{ steps.extract_command.outputs.command }}'
       request: '${{ steps.extract_command.outputs.request }}'
@@ -98,7 +97,6 @@ jobs:
     uses: './.github/workflows/gemini-review.yml'
     permissions:
       contents: 'read'
-      id-token: 'write'
       issues: 'write'
       pull-requests: 'write'
     with:
@@ -116,7 +114,6 @@ jobs:
     permissions:
       contents: 'read'
       issues: 'write'
-      pull-requests: 'write'
     steps:
       - name: 'Send failure comment'
         env:
