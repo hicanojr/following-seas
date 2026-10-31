@@ -23,6 +23,11 @@ describe("sign-in cannot install a session from a URL", () => {
     expect(hits).toEqual([]);
   });
 
+  it("does not let the browser client install a URL session", () => {
+    const client = readFileSync(join(SRC, "lib", "supabase", "client.ts"), "utf8");
+    expect(client).toMatch(/detectSessionInUrl:\s*false/);
+  });
+
   it("there is no implicit-flow client or /auth/confirm page", () => {
     expect(existsSync(join(SRC, "app", "auth", "confirm"))).toBe(false);
     const hits = sources()

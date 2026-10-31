@@ -12,5 +12,7 @@ import { getSupabasePublicConfig } from "./env";
 export function createClient() {
   const config = getSupabasePublicConfig();
   if (!config) return null;
-  return createBrowserClient(config.url, config.anonKey);
+  return createBrowserClient(config.url, config.anonKey, {
+    auth: { detectSessionInUrl: false },
+  });
 }
