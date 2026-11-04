@@ -2,7 +2,7 @@
 
 Fair Winds job search app: a Chief of Staff agent and specialist agents that find, score, and track jobs.
 
-It is a phone-friendly, installable web app. Each person signs in with an email link and sees only their own data. Agents search, score, and track. They never apply, never use Easy Apply, and never contact anyone on your behalf. See [CLAUDE.md](CLAUDE.md) for the full rules.
+It is a phone-friendly, installable web app. Each person signs in with a numeric code sent by email and sees only their own data. Agents search, score, and track. They never apply, never use Easy Apply, and never contact anyone on your behalf. See [CLAUDE.md](CLAUDE.md) for the full rules.
 
 **Status:** Phases 0–4 are implemented in source. Live sign-in, providers, scheduled searches, and scoring still require the documented Supabase and environment setup and have not been acceptance-tested from this checkout. Writer support is limited to review-only drafts; Fair Winds never submits applications or contacts recruiters.
 
@@ -16,8 +16,8 @@ Next.js 16 (App Router, TypeScript) · Tailwind CSS 4 · Supabase (Postgres, Aut
 
 1. Create a project at [supabase.com](https://supabase.com/dashboard).
 2. In **Authentication > Sign In / Providers**, make sure **Email** is enabled.
-3. In **Authentication > Email Templates > Magic Link**, include both `{{ .Token }}` (the cross-browser code) and `{{ .ConfirmationURL }}` (the same-browser link). Without `{{ .Token }}`, the login page cannot provide cross-browser sign-in.
-4. In **Authentication > URL Configuration**, set **Site URL** to your app's URL (for local work, `http://localhost:3000`) and add `http://localhost:3000/auth/callback` and `https://<your-vercel-domain>/auth/callback` to **Redirect URLs**.
+3. In **Authentication > Email Templates > Magic Link**, include `{{ .Token }}`. Fair Winds supports the numeric code because email security scanners can consume one-time links before the user opens them.
+4. In **Authentication > URL Configuration**, set **Site URL** to your app's URL (for local work, `http://localhost:3000`).
 
 ### 2. Run the migrations
 

@@ -36,6 +36,13 @@ describe("sign-in cannot install a session from a URL", () => {
     expect(hits).toEqual([]);
   });
 
+  it("requests numeric-code sign-in without advertising an email link", () => {
+    const login = readFileSync(join(SRC, "app", "login", "LoginForm.tsx"), "utf8");
+    expect(login).toContain("Enter the numeric code");
+    expect(login).not.toContain("emailRedirectTo");
+    expect(login).not.toMatch(/open the (?:email )?link/i);
+  });
+
   it("only the login form verifies a typed code, and no GET route signs in by token_hash", () => {
     const verifiers = sources()
       .filter((f) => /\.verifyOtp\s*\(/.test(readFileSync(f, "utf8")))

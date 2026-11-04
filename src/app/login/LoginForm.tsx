@@ -20,7 +20,9 @@ export function LoginForm() {
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<Status>(params.get("error") ? "error" : "idle");
   const [message, setMessage] = useState<string | null>(
-    params.get("error") ? "That sign-in link did not work. Request a new one." : null,
+    params.get("error")
+      ? "That email link did not work. Request a new code and use the numeric code from the newest email."
+      : null,
   );
 
   if (!supabase) {
@@ -42,19 +44,13 @@ export function LoginForm() {
     if (!supabase) return;
     setStatus("sending");
     setMessage(null);
-    // The emailed link (PKCE) only works in this browser. The code works anywhere it is typed.
-    const redirect = new URL("/auth/callback", window.location.origin);
-    redirect.searchParams.set("next", safeNext(params.get("next")));
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: redirect.toString() },
-    });
+    const { error } = await supabase.auth.signInWithOtp({ email });
     if (error) {
       setStatus("error");
       setMessage(error.message);
     } else {
       setStatus("sent");
-      setMessage(`We emailed ${email}. Enter the code from the email, or open the link in this browser.`);
+      setMessage(`We emailed ${email}. Enter the numeric code from the newest email.`);
     }
   }
 
