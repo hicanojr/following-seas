@@ -232,6 +232,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.results_wanted, 10)
         self.assertIsNone(config.anthropic_api_key)
         self.assertEqual(config.embedding_model, "sentence-transformers/all-MiniLM-L6-v2")
+        self.assertEqual(config.resume_model, "claude-haiku-4-5-20251001")
 
 
 def _vector() -> list[float]:
