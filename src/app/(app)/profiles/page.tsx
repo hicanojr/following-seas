@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { EmptyState, PageHeader } from "@/components/EmptyState";
 import { profileToFormInput, type ProfileFormInput } from "@/lib/shortlist/profile-form";
@@ -41,6 +42,7 @@ export default function ProfilesPage({ searchParams }: { searchParams: SearchPar
 const card = "rounded-2xl border border-line bg-card p-5 shadow-sm";
 
 async function ProfilesContent({ searchParams }: { searchParams: SearchParams }) {
+  await connection();
   const params = await searchParams;
   const supabase = await createClient();
 
