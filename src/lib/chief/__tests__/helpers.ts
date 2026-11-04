@@ -102,7 +102,7 @@ export function message(content: Block[], stop_reason: string) {
     id: `msg_${Math.random().toString(36).slice(2)}`,
     type: "message",
     role: "assistant",
-    model: "claude-opus-5-5",
+    model: "claude-opus-5",
     content,
     stop_reason,
     stop_details: null,

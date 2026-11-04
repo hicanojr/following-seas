@@ -5,7 +5,7 @@
  */
 
 /** A capable current model. Override with CHIEF_MODEL. */
-export const DEFAULT_CHIEF_MODEL = "claude-opus-5-5";
+export const DEFAULT_CHIEF_MODEL = "claude-opus-5";
 
 /** The hard gates, word for word from CLAUDE.md. */
 export const HARD_GATES = `- **Never submit an application.** The person applies themselves.

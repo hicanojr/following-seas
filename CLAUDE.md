@@ -50,7 +50,7 @@ Changing either list is a product decision for the owner, not something to do in
 - Next.js 16, App Router, TypeScript, React 19. **Next 16 differs from older versions**: `middleware.ts` is now `src/proxy.ts`, and Cache Components is on (`cacheComponents: true`), so reading cookies or other request data in a Server Component must sit inside `<Suspense>`. Read `node_modules/next/dist/docs/` before using an unfamiliar API.
 - Tailwind CSS 4 (theme tokens in `src/app/globals.css`; navy `#0b2545`, brass accent).
 - Supabase via `@supabase/supabase-js` and `@supabase/ssr`. Clients: `src/lib/supabase/client.ts` (browser), `server.ts` (Server Components and route handlers), `proxy.ts` (session refresh and route protection). All return `null` when env vars are missing so the app builds without them.
-- Auth: email magic link. `/login` sends the link; `/auth/callback` exchanges it; `/auth/signout` (POST) signs out. Every other route requires a session.
+- Auth: email one-time code. `/login` emails a code and the person types it (`verifyOtp`), which works across browsers; the emailed PKCE link is a same-browser convenience handled by `/auth/callback`. Never install a session from URL tokens (a test enforces this). `/auth/signout` (POST) signs out. Every other route requires a session.
 - Vitest for unit tests. ESLint (`eslint-config-next`).
 - Deployed on Vercel. CI on GitHub Actions, Node 22.
 
@@ -83,12 +83,12 @@ Run lint, typecheck, test, and build before every commit. CI runs the same.
 
 ## Roadmap
 
-- **Phase 0, Foundation** (done): app shell and PWA basics, magic-link auth, schema with RLS, gates, seed, CI.
-- **Phase 1, Data sources** (decided: hybrid): Indeed, ZipRecruiter, Glassdoor, and Google via the JobSpy worker, LinkedIn via Apify (25 to 50 cap), USAJobs API. The app does not run JobSpy itself.
-- **Phase 2, Search and scoring**: Search agent runs the query library and updates query quality; Scoring agent fills `scores`.
-- **Phase 3, Shortlist and tracker**: keep/skip decisions, application tracking and follow-up reminders, plus import from existing `.xlsx` trackers.
-- **Phase 4, Chief of Staff**: chat and the daily Brief.
-- **Later, Writer**: drafts for the person to review and send themselves.
+- **Phase 0, Foundation** (implemented): app shell and PWA basics, email-code auth, schema with RLS, gates, seed, CI.
+- **Phase 1, Data sources** (implemented): Indeed, ZipRecruiter, Glassdoor, and Google via the JobSpy worker, LinkedIn via Apify (25 to 50 cap), USAJobs API. The app does not run JobSpy itself.
+- **Phase 2, Search and scoring** (implemented): Search agent runs the query library; Scoring agent fills `scores`. Automated query-quality updates remain future work.
+- **Phase 3, Shortlist and tracker** (implemented): keep/skip decisions, application tracking and follow-up reminders, plus import from existing `.xlsx` trackers.
+- **Phase 4, Chief of Staff** (implemented): chat and the daily Brief.
+- **Writer** (partial): review-only drafts for the person to send themselves.
 
 ## Conventions
 

@@ -174,6 +174,8 @@ def run_once(deps: RunDeps) -> dict:
         try:
             outcome = run_user(deps, user_id)
             status = "failed" if outcome["errors"] and outcome["inserted"] == 0 and outcome["url_filled"] == 0 else "succeeded"
+            if status == "failed":
+                failed += 1
             deps.store.finish_run(user_id, run_id, status, outcome, None if status == "succeeded" else "One or more searches failed")
             deps.store.audit(user_id, "search", {"run_id": run_id, **{k: outcome[k] for k in ("inserted", "url_filled", "embedded", "gaps", "parse")}})
             summaries.append({"user_id": user_id, "status": status, **outcome})

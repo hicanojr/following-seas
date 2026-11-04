@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { MAX_TOOL_ROUNDS, buildRequest, runChief } from "../agent";
-import { CHIEF_SYSTEM_PROMPT } from "../prompt";
+import { CHIEF_SYSTEM_PROMPT, DEFAULT_CHIEF_MODEL } from "../prompt";
 import {
   JOB_ID,
   QUERY_ID,
@@ -197,9 +197,13 @@ describe("runChief", () => {
 });
 
 describe("buildRequest", () => {
+  it("uses an active Opus model by default", () => {
+    expect(DEFAULT_CHIEF_MODEL).toBe("claude-opus-5");
+  });
+
   it("uses the configured model, a cached system prompt, auto tool choice, and fallbacks", () => {
-    const req = buildRequest("claude-opus-5-5", [{ role: "user", content: "hi" }]);
-    expect(req.model).toBe("claude-opus-5-5");
+    const req = buildRequest("claude-opus-5", [{ role: "user", content: "hi" }]);
+    expect(req.model).toBe("claude-opus-5");
     expect(req.tool_choice).toEqual({ type: "auto" });
     expect(req.fallbacks).toBe("default");
     expect(req.betas).toContain("server-side-fallback-2026-07-01");
