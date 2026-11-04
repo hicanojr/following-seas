@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 import { EmptyState, PageHeader } from "@/components/EmptyState";
 import { FollowUpsCard } from "@/components/tracker/FollowUpsCard";
@@ -48,6 +49,7 @@ function NoBrief({ children }: { children?: ReactNode }) {
 }
 
 async function BriefContent() {
+  await connection();
   const supabase = await createClient();
   if (!supabase) return <NoBrief />;
   const { data } = await supabase.auth.getUser();
