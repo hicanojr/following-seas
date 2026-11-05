@@ -9,6 +9,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { EasyApply } from "@/lib/jobs/types";
+import { hasVeteranPreference } from "@/lib/jobs/veteran";
 import { formatUsd } from "@/lib/scoring/prechecks";
 import { createScoringClient, scoringModel } from "@/lib/scoring/client";
 import { scoreJobs } from "@/lib/scoring/service";
@@ -163,7 +164,7 @@ export function supabaseChiefServices(supabase: SupabaseClient, userId: string):
       const [{ data: jobRows, error: jobsError }, { data: decisionRows, error: decisionsError }] = await Promise.all([
         supabase
           .from("jobs")
-          .select("id, title, company, location, salary_min, salary_max, salary_text, url, easy_apply")
+          .select("id, title, company, location, salary_min, salary_max, salary_text, url, easy_apply, description, requirements")
           .in("id", ids)
           .is("deleted_at", null),
         supabase.from("decisions").select("job_id, decision, reason").eq("profile_id", profileId).in("job_id", ids),
@@ -193,6 +194,10 @@ export function supabaseChiefServices(supabase: SupabaseClient, userId: string):
           dealBreakerHit: dealBreaker,
           easy_apply: EASY_LABEL[easy],
           url: str(j.url),
+          veteranPreference: hasVeteranPreference({
+            description: str(j.description),
+            requirements: strings(j.requirements),
+          }),
         });
       }
 
@@ -217,6 +222,7 @@ export function supabaseChiefServices(supabase: SupabaseClient, userId: string):
           deal_breaker: j.deal_breaker,
           easy_apply: j.easy_apply,
           url: j.url,
+          veteranPreference: j.veteranPreference,
         }));
     },
 

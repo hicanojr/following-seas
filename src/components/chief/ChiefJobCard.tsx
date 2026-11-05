@@ -12,6 +12,11 @@ export function ChiefJobCard({ job }: { job: ChiefJob }) {
   const href = safeHttpUrl(job.url);
   return (
     <article className="rounded-xl border border-line bg-card p-3 text-sm shadow-sm">
+      {job.veteranPreference ? (
+        <p className="mb-2 inline-flex rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:text-amber-300">
+          <span aria-hidden>★&nbsp;</span> Veterans encouraged
+        </p>
+      ) : null}
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold leading-snug">{job.title}</h3>

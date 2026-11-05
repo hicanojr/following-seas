@@ -6,6 +6,7 @@ import { JobCard, ScreenedOutCard, type ScoredJob } from "@/components/jobs/JobC
 import { DecisionControls, type CurrentDecision } from "@/components/jobs/DecisionControls";
 import { ScoreButton } from "@/components/jobs/ScoreButton";
 import type { EasyApply } from "@/lib/jobs/types";
+import { hasVeteranPreference } from "@/lib/jobs/veteran";
 import { formatUsd } from "@/lib/scoring/prechecks";
 import { groupJobs, JOB_VIEWS, parseJobView, type JobView } from "@/lib/shortlist/views";
 import { createClient } from "@/lib/supabase/server";
@@ -122,7 +123,7 @@ async function JobsContent({ searchParams }: { searchParams: SearchParams }) {
   const { data: jobRows } = jobIds.length
     ? await supabase
         .from("jobs")
-        .select("id, title, company, location, salary_min, salary_max, salary_text, url, easy_apply")
+        .select("id, title, company, location, salary_min, salary_max, salary_text, url, easy_apply, description, requirements")
         .in("id", jobIds)
         .is("deleted_at", null)
     : { data: [] as Record<string, unknown>[] };
@@ -152,6 +153,10 @@ async function JobsContent({ searchParams }: { searchParams: SearchParams }) {
       unmetMustHaves: strings(s.unmet_must_haves),
       dealBreakerHit: (s.deal_breaker_hit as string | null) ?? null,
       keywordGaps: [],
+      veteranPreference: hasVeteranPreference({
+        description: (j.description as string | null) ?? null,
+        requirements: strings(j.requirements),
+      }),
     });
   }
 

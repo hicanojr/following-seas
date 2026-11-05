@@ -17,6 +17,8 @@ export interface ScoredJob {
   dealBreakerHit: string | null;
   /** Required terms on the posting that were not found in the resume. Suggestions only. */
   keywordGaps: string[];
+  /** The posting explicitly encourages or prefers veteran applicants. */
+  veteranPreference: boolean;
 }
 
 const EASY_APPLY_LABEL: Record<EasyApply, string> = { yes: "Yes", no: "No", unknown: "Unknown" };
@@ -75,7 +77,14 @@ function KeywordSuggestions({ items }: { items: string[] }) {
 export function JobCard({ job, children }: { job: ScoredJob; children?: ReactNode }) {
   const href = safeHttpUrl(job.url);
   return (
-    <article className="rounded-2xl border border-line bg-card p-5 shadow-sm">
+    <article
+      className={`rounded-2xl border bg-card p-5 shadow-sm ${job.veteranPreference ? "border-amber-500/70 ring-1 ring-amber-500/20" : "border-line"}`}
+    >
+      {job.veteranPreference ? (
+        <p className="mb-3 inline-flex rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-800 dark:text-amber-300">
+          <span aria-hidden>★&nbsp;</span> Veterans encouraged
+        </p>
+      ) : null}
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-semibold leading-snug">{job.title}</h3>
@@ -133,6 +142,11 @@ export function ScreenedOutCard({ job, children }: { job: ScoredJob; children?: 
   const href = safeHttpUrl(job.url);
   return (
     <li className="rounded-xl border border-line bg-card p-4 text-sm">
+      {job.veteranPreference ? (
+        <p className="mb-2 inline-flex rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:text-amber-300">
+          <span aria-hidden>★&nbsp;</span> Veterans encouraged
+        </p>
+      ) : null}
       <p className="font-medium">{job.title}</p>
       <p className="text-muted">{[job.company, job.location].filter(Boolean).join(" · ")}</p>
       <p className="mt-1">

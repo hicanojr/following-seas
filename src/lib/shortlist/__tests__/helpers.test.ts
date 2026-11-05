@@ -70,6 +70,18 @@ describe("views", () => {
     expect(parseJobView("nope")).toBe("review");
     expect(parseJobView(undefined)).toBe("review");
   });
+
+  it("puts explicit veteran-preference jobs first when fit is tied", () => {
+    const g = groupJobs(
+      [
+        { jobId: "high", fit: 10, dealBreakerHit: null, veteranPreference: false },
+        { jobId: "same-fit", fit: 8, dealBreakerHit: null, veteranPreference: false },
+        { jobId: "vet-high", fit: 8, dealBreakerHit: null, veteranPreference: true },
+      ],
+      new Map(),
+    );
+    expect(g.review.map((job) => job.jobId)).toEqual(["high", "vet-high", "same-fit"]);
+  });
 });
 
 describe("profile form", () => {

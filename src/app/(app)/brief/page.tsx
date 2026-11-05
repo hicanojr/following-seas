@@ -206,6 +206,11 @@ function fitTone(fit: number | null): string {
 function JobRow({ job, showUnmet }: { job: BriefJob; showUnmet?: boolean }) {
   return (
     <li className="rounded-xl bg-background p-3">
+      {job.veteranPreference ? (
+        <p className="mb-2 inline-flex rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:text-amber-300">
+          <span aria-hidden>★&nbsp;</span> Veterans encouraged
+        </p>
+      ) : null}
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <p className="break-words text-sm font-medium leading-snug">{job.title}</p>

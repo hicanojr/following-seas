@@ -8,6 +8,7 @@ import { classifyFollowUps } from "@/lib/tracker/followups";
 import { addDays, isIsoDate } from "@/lib/tracker/dates";
 import type { ApplicationStatus } from "@/lib/tracker/types";
 import { measureThreshold, type DecisionHistoryItem, type ThresholdResult } from "@/lib/shortlist/stats";
+import { hasVeteranPreference } from "@/lib/jobs/veteran";
 import { querySuggestions, type QueryHealth, type QueryHealthInput } from "./query-health";
 
 export const BRIEF_VERSION = 1;
@@ -36,6 +37,8 @@ export interface BriefJobRow {
   source: string;
   easy_apply: EasyApply | string;
   created_at: string;
+  description?: string | null;
+  requirements?: unknown;
 }
 
 export interface BriefScoreRow {
@@ -99,6 +102,7 @@ export interface BriefJob {
   url: string | null;
   unmetMustHaves: string[];
   isNew: boolean;
+  veteranPreference?: boolean;
 }
 
 export interface BriefFollowUp {
@@ -264,10 +268,12 @@ export function buildBrief(input: BriefInput): Brief {
     url: safeUrl(job.url),
     unmetMustHaves: strings(score?.unmet_must_haves),
     isNew: after(job.created_at, input.since),
+    veteranPreference: hasVeteranPreference({ description: job.description, requirements: strings(job.requirements) }),
   });
 
   const byFitThenNewest = (a: BriefJob, b: BriefJob) =>
     (b.fit ?? 0) - (a.fit ?? 0) ||
+    Number(Boolean(b.veteranPreference)) - Number(Boolean(a.veteranPreference)) ||
     (Number(b.isNew) - Number(a.isNew)) ||
     a.title.localeCompare(b.title);
 

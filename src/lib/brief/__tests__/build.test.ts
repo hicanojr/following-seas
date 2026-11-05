@@ -91,6 +91,21 @@ describe("buildBrief", () => {
     expect(b.newJobs[0]).toMatchObject({ fit: 9, isNew: true, reason: "Fit 9.", profileName: "Director of Laboratory Services" });
   });
 
+  it("marks explicit veteran preference and uses it only as a fit-score tiebreaker", () => {
+    const b = buildBrief(
+      input({
+        jobs: [
+          job("plain", { created_at: NEW }),
+          job("veteran", { created_at: NEW, description: "Veterans are encouraged to apply." }),
+          job("higher", { created_at: NEW }),
+        ],
+        scores: [score("plain", 8), score("veteran", 8), score("higher", 9)],
+      }),
+    );
+    expect(b.newJobs.map((j) => j.jobId)).toEqual(["higher", "veteran", "plain"]);
+    expect(b.newJobs.find((j) => j.jobId === "veteran")?.veteranPreference).toBe(true);
+  });
+
   it("puts fit 7+ first in To review and leaves out decided, screened, and tracked jobs", () => {
     const b = buildBrief(
       input({
