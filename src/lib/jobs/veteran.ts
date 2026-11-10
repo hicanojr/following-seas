@@ -10,6 +10,9 @@ const VETERAN_PREFERENCE_PATTERNS = [
 
 const VETERAN_STATUS_BOILERPLATE = [
   /\b(?:no|without) veterans? preference\b/i,
+  /\bnot (?:an? )?veterans?'? preference\b/i,
+  /\bveterans?'? preference (?:does|did|will|would|can|may) not (?:apply|exist)\b/i,
+  /\bveterans?'? preference (?:is|are) not (?:applicable|available|offered|provided)\b/i,
   /\b(?:regardless of|without regard to) (?:protected )?veteran status\b/i,
   /\bprotected veteran status\b/i,
 ];

@@ -18,6 +18,9 @@ describe("veteran preference", () => {
     expect(hasVeteranPreference({ description: "We do not discriminate based on protected veteran status." })).toBe(false);
     expect(hasVeteranPreference({ description: "Candidates are considered regardless of veteran status." })).toBe(false);
     expect(hasVeteranPreference({ description: "There is no veteran preference for this opening." })).toBe(false);
+    expect(hasVeteranPreference({ description: "There is not a veteran preference for this opening." })).toBe(false);
+    expect(hasVeteranPreference({ description: "Veteran preference does not apply to this role." })).toBe(false);
+    expect(hasVeteranPreference({ description: "Veteran preference is not offered for this position." })).toBe(false);
     expect(hasVeteranPreference({ description: null, requirements: [] })).toBe(false);
   });
 
