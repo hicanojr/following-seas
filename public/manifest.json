@@ -1,7 +1,7 @@
 {
   "name": "Fair Winds",
   "short_name": "Fair Winds",
-  "description": "A calm, private job search with a Chief of Staff at the helm.",
+  "description": "A calm, private job search with your Chief in command.",
   "start_url": "/brief",
   "scope": "/",
   "display": "standalone",

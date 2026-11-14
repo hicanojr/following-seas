@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Fair Winds", template: "%s · Fair Winds" },
-  description: "A calm, private job search with a Chief of Staff at the helm.",
+  description: "A calm, private job search with your Chief in command.",
   applicationName: "Fair Winds",
   manifest: "/manifest.json",
   icons: {

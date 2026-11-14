@@ -18,7 +18,7 @@ const card = "rounded-2xl border border-line bg-card p-5 shadow-sm";
 export default function BriefPage() {
   return (
     <>
-      <PageHeader title="Brief" subtitle="Your Chief of Staff's daily report." />
+      <PageHeader title="Brief" subtitle="Your Chief's daily brief." />
       <div className="space-y-4">
         <Suspense fallback={<p className="text-sm text-muted">Preparing your brief...</p>}>
           <BriefContent />
@@ -40,7 +40,7 @@ function NoBrief({ children }: { children?: ReactNode }) {
     >
       {children ?? (
         <p>
-          Once your search profiles are set up, your Chief of Staff will put together a short brief here each day. It
+          Once your search profiles are set up, your Chief will put together a short brief here each day. It
           reports and suggests. It never applies or contacts anyone for you.
         </p>
       )}

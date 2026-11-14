@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
   const client = isChiefConfigured() ? createChiefClient() : null;
   if (!client) {
-    return jsonError(503, "missing_config", "The Chief of Staff is not set up yet: ANTHROPIC_API_KEY is missing on the server.");
+    return jsonError(503, "missing_config", "The Chief is not set up yet: ANTHROPIC_API_KEY is missing on the server.");
   }
 
   let body: unknown;
@@ -79,14 +79,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ conversationId, ...result });
   } catch (err) {
     if (err instanceof Anthropic.RateLimitError) {
-      return jsonError(429, "rate_limited", "The Chief of Staff is busy right now. Try again in a minute.");
+      return jsonError(429, "rate_limited", "The Chief is busy right now. Try again in a minute.");
     }
     if (err instanceof Anthropic.AuthenticationError) {
-      return jsonError(503, "missing_config", "The Chief of Staff's API key was rejected. Check ANTHROPIC_API_KEY.");
+      return jsonError(503, "missing_config", "The Chief's API key was rejected. Check ANTHROPIC_API_KEY.");
     }
     if (err instanceof Anthropic.APIError) {
       console.error("chief model error", err.status, err.message);
-      return jsonError(502, "upstream", "The Chief of Staff could not answer just now. Try again shortly.");
+      return jsonError(502, "upstream", "The Chief could not answer just now. Try again shortly.");
     }
     console.error("chief route error", err);
     return jsonError(500, "server_error", "Something went wrong. Try again.");
