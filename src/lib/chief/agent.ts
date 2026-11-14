@@ -199,7 +199,7 @@ export async function runTool(
   let error: string | null = null;
 
   if (!tool) {
-    error = `There is no tool named "${use.name}". The Chief of Staff cannot apply, use Easy Apply, send messages, or log in anywhere.`;
+    error = `There is no tool named "${use.name}". The Chief cannot apply, use Easy Apply, send messages, or log in anywhere.`;
   } else {
     const parsed = tool.schema.safeParse(use.input ?? {});
     if (!parsed.success) {

@@ -107,7 +107,7 @@ export function ChiefChat({
     <div className="pb-36">
       {!configured ? (
         <p className="mb-4 rounded-xl border border-line bg-card p-4 text-sm text-muted">
-          The Chief of Staff is not set up yet: ANTHROPIC_API_KEY is missing on the server.
+          The Chief is not set up yet: ANTHROPIC_API_KEY is missing on the server.
         </p>
       ) : null}
 
@@ -115,7 +115,7 @@ export function ChiefChat({
         <section className="rounded-2xl border border-line bg-card p-5 text-sm leading-relaxed text-muted shadow-sm">
           <div className="mb-3 h-px w-12 bg-brass" aria-hidden />
           <p>
-            Ask in plain words. The Chief of Staff runs your searches, scores jobs, suggests a shortlist, and keeps your
+            Ask in plain words. The Chief runs your searches, scores jobs, suggests a shortlist, and keeps your
             tracker current.
           </p>
           <p className="mt-2">
@@ -189,7 +189,7 @@ export function ChiefChat({
           </div>
           <form onSubmit={onSubmit} className="flex items-end gap-2">
             <label htmlFor="chief-input" className="sr-only">
-              Message the Chief of Staff
+              Message the Chief
             </label>
             <textarea
               id="chief-input"
@@ -204,7 +204,7 @@ export function ChiefChat({
                   void send(draft);
                 }
               }}
-              placeholder="Ask your Chief of Staff"
+              placeholder="Ask your Chief"
               disabled={!configured}
               className="max-h-32 min-h-[2.75rem] flex-1 resize-none rounded-2xl border border-line bg-card px-4 py-2.5 text-base outline-none focus:border-brass"
             />
