@@ -14,7 +14,7 @@
 
 ## Left to do (not deployed yet)
 
-- [ ] Commit `BOARD.md`, `HANDOFF.md`, `README.md`, `CLAUDE.md`, and this `DEPLOY_CHECKLIST.md`
+- [x] Commit `BOARD.md`, `HANDOFF.md`, `README.md`, `CLAUDE.md`, and this `DEPLOY_CHECKLIST.md`
 - [ ] Create `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for local sign-in testing (never commit; `.env*` is gitignored)
 - [ ] Provision a Supabase project and run migrations `0001_init` through `0007_jobspy` (SQL Editor or `npx supabase db push`)
 - [ ] Set Vercel environment variables (server-only where marked): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `ANTHROPIC_API_KEY`, `APIFY_TOKEN`, `USAJOBS_API_KEY`, `USAJOBS_USER_AGENT`, plus optional `SCORING_MODEL`, `CHIEF_MODEL`, `DAILY_SEARCH_CAP`
