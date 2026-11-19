@@ -4,7 +4,7 @@ Fair Winds job search app: a Chief of Staff agent and specialist agents that fin
 
 It is a phone-friendly, installable web app. Each person signs in with an email link and sees only their own data. Agents search, score, and track. They never apply, never use Easy Apply, and never contact anyone on your behalf. See [CLAUDE.md](CLAUDE.md) for the full rules.
 
-**Status:** Phase 0 (foundation). The app shell, sign-in, database schema, and agent gates are in place. Agents come in later phases.
+**Status:** All phases (Foundation, Data sources, Search/scoring, Shortlist/tracker, Chief of Staff) are implemented and tested. The app shell, sign-in, database schema with RLS, agent gates, search and scoring agents, tracker, and daily Chief of Staff brief are in place.
 
 ## Stack
 

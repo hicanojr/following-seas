@@ -84,10 +84,10 @@ Run lint, typecheck, test, and build before every commit. CI runs the same.
 ## Roadmap
 
 - **Phase 0, Foundation** (done): app shell and PWA basics, magic-link auth, schema with RLS, gates, seed, CI.
-- **Phase 1, Data sources** (decided: hybrid): Indeed, ZipRecruiter, Glassdoor, and Google via the JobSpy worker, LinkedIn via Apify (25 to 50 cap), USAJobs API. The app does not run JobSpy itself.
-- **Phase 2, Search and scoring**: Search agent runs the query library and updates query quality; Scoring agent fills `scores`.
-- **Phase 3, Shortlist and tracker**: keep/skip decisions, application tracking and follow-up reminders, plus import from existing `.xlsx` trackers.
-- **Phase 4, Chief of Staff**: chat and the daily Brief.
+- **Phase 1, Data sources** (done: hybrid): Indeed, ZipRecruiter, Glassdoor, and Google via the JobSpy worker, LinkedIn via Apify (25 to 50 cap), USAJobs API. The app does not run JobSpy itself.
+- **Phase 2, Search and scoring** (done): Search agent runs the query library and updates query quality; Scoring agent fills `scores`.
+- **Phase 3, Shortlist and tracker** (done): keep/skip decisions, application tracking and follow-up reminders, plus import from existing `.xlsx` trackers.
+- **Phase 4, Chief of Staff** (done): chat and the daily Brief.
 - **Later, Writer**: drafts for the person to review and send themselves.
 
 ## Conventions
