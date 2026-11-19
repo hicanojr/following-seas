@@ -303,7 +303,7 @@ export const CHIEF_TOOLS = [
     definition: {
       name: "draft_note",
       description:
-        "Write a draft follow-up email or thank-you note about one job for the person to review and send themselves. Returns text only; it is never sent.",
+        "Write a draft follow-up email, thank-you note, or cover letter about one job for the person to review and send themselves. Cover letters draw on the person's saved career facts. Returns text only; it is never sent.",
       input_schema: {
         type: "object",
         properties: {
@@ -318,7 +318,8 @@ export const CHIEF_TOOLS = [
       assertAllowed("draft");
       const job = await ctx.services.getJobForDraft(input.job_id);
       if (!job) throw new ToolRefusal("That job was not found.");
-      const draft = buildDraft(input.kind, job);
+      const facts = input.kind === "cover_letter" ? await ctx.services.getCareerFacts() : null;
+      const draft = buildDraft(input.kind, job, facts ?? undefined);
       ctx.collected.drafts.push(draft);
       return { label: draft.label, sent: false, notice: DRAFT_NOTICE, text: draft.text };
     },

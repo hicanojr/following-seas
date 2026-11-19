@@ -236,6 +236,20 @@ export function supabaseChiefServices(supabase: SupabaseClient, userId: string):
       };
     },
 
+    async getCareerFacts() {
+      const { data, error } = await supabase
+        .from("career_facts")
+        .select("credentials, experience, other")
+        .maybeSingle();
+      if (error) throw new Error(`Could not load career facts: ${error.message}`);
+      if (!data) return null;
+      return {
+        credentials: typeof data.credentials === "string" ? data.credentials : "",
+        experience: typeof data.experience === "string" ? data.experience : "",
+        other: typeof data.other === "string" ? data.other : "",
+      };
+    },
+
     async getJobForDraft(jobId) {
       const { data, error } = await supabase
         .from("jobs")

@@ -88,7 +88,7 @@ Run lint, typecheck, test, and build before every commit. CI runs the same.
 - **Phase 2, Search and scoring** (done): Search agent runs the query library and updates query quality; Scoring agent fills `scores`.
 - **Phase 3, Shortlist and tracker** (done): keep/skip decisions, application tracking and follow-up reminders, plus import from existing `.xlsx` trackers.
 - **Phase 4, Chief of Staff** (done): chat and the daily Brief.
-- **Later, Writer**: drafts for the person to review and send themselves.
+- **Writer** (done): cover letter and note drafts for the person to review and send themselves. Drafts are built only from job data and the person's saved career facts; nothing is sent automatically.
 
 ## Conventions
 
