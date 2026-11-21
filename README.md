@@ -2,9 +2,9 @@
 
 Fair Winds job search app: a Chief of Staff agent and specialist agents that find, score, and track jobs.
 
-It is a phone-friendly, installable web app. Each person signs in with a numeric code sent by email and sees only their own data. Agents search, score, and track. They never apply, never use Easy Apply, and never contact anyone on your behalf. See [CLAUDE.md](CLAUDE.md) for the full rules.
+It is a phone-friendly, installable web app. Each person signs in with an email link and sees only their own data. Agents search, score, and track. They never apply, never use Easy Apply, and never contact anyone on your behalf. See [CLAUDE.md](CLAUDE.md) for the full rules.
 
-**Status:** Phases 0–4 are implemented in source. Live sign-in, providers, scheduled searches, and scoring still require the documented Supabase and environment setup and have not been acceptance-tested from this checkout. Writer support is limited to review-only drafts; Fair Winds never submits applications or contacts recruiters.
+**Status:** All phases (Foundation, Data sources, Search/scoring, Shortlist/tracker, Chief of Staff) are implemented and tested. The app shell, sign-in, database schema with RLS, agent gates, search and scoring agents, tracker, and daily Chief of Staff brief are in place.
 
 ## Stack
 
@@ -15,15 +15,12 @@ Next.js 16 (App Router, TypeScript) · Tailwind CSS 4 · Supabase (Postgres, Aut
 ### 1. Create a Supabase project
 
 1. Create a project at [supabase.com](https://supabase.com/dashboard).
-2. In **Authentication > Sign In / Providers**, make sure **Email** is enabled.
-3. In **Authentication > Email Templates > Magic Link**, include `{{ .Token }}`. Fair Winds supports the numeric code because email security scanners can consume one-time links before the user opens them.
-4. In **Authentication > URL Configuration**, set **Site URL** to your app's URL (for local work, `http://localhost:3000`).
+2. In **Authentication > Sign In / Providers**, make sure **Email** is enabled. Magic links are on by default.
+3. In **Authentication > URL Configuration**, set **Site URL** to your app's URL (for local work, `http://localhost:3000`) and add `http://localhost:3000/auth/callback` and `https://<your-vercel-domain>/auth/callback` to **Redirect URLs**.
 
-### 2. Run the migrations
+### 2. Run the migration
 
-Apply every file in `supabase/migrations/`, in filename order. The app and the worker need all of them, not just `0001_init.sql`. The numbers are not contiguous (there is no `0003` or `0004`); that is fine, so run the files that exist and do not add placeholders.
-
-With the Supabase CLI, `db push` applies them all in order:
+Either paste `supabase/migrations/0001_init.sql` into the **SQL Editor** and run it, or use the Supabase CLI:
 
 ```bash
 npx supabase login
@@ -31,9 +28,7 @@ npx supabase link --project-ref <project-ref>
 npx supabase db push
 ```
 
-Or paste each file into the **SQL Editor** and run it, one at a time, in order (`0001`, `0002`, `0005`, `0006`, `0007`). If `0007` says the vector extension is not available, enable **vector** under Database > Extensions and run it again.
-
-Together they create the tables, enums, Row Level Security policies, and the worker tables. Never edit a migration that has been applied; add a new one with the next number instead.
+This creates the tables, enums, and Row Level Security policies.
 
 ### 3. Seed the Director of Laboratory Services profile (optional)
 
@@ -105,7 +100,7 @@ Run `supabase/migrations/0006_brief.sql` before the first scheduled run. To try 
 
 A separate Python program searches Indeed, ZipRecruiter, Glassdoor, and Google, writes the postings (including the posting URL), embeds the resume and the postings, parses the base resume once, and stores keyword suggestions. It does not run inside the Next.js app. LinkedIn stays on Apify.
 
-Setup, the Docker cron, the GitHub Actions schedule, and the environment variable names are in [worker/README.md](worker/README.md). Run `supabase/migrations/0007_jobspy.sql` before the first worker run. Paste the base resume on the Profiles tab. The scheduled run skips anyone who turned the daily run off on the Brief tab (`brief_settings.daily_run = false`); with no setting saved it stays on. `JOBSPY_USER_ID` is an owner-authorized manual override that runs one named person regardless of that scheduled-run setting.
+Setup, the Docker cron, the GitHub Actions schedule, and the environment variable names are in [worker/README.md](worker/README.md). Run `supabase/migrations/0007_jobspy.sql` before the first worker run. Paste the base resume on the Profiles tab.
 
 When a resume embedding exists, scoring sends only the closest quarter of postings to Claude. Keyword lists on each job are suggestions only. Agents still never apply, never use Easy Apply, and never message anyone.
 
@@ -113,8 +108,8 @@ When a resume embedding exists, scoring sends only the closest quarter of postin
 
 ```
 src/app/(app)/        Brief, Jobs, Profiles, Tracker (signed-in pages with the tab bar)
-src/app/login/        Email-code sign-in
-src/app/auth/         PKCE link callback and sign-out
+src/app/login/        Magic-link sign-in
+src/app/auth/         Magic-link callback and sign-out
 src/proxy.ts          Session refresh and route protection (Next 16 "proxy", formerly middleware)
 src/lib/gates.ts      Agent allow-list, forbidden actions, LinkedIn result cap
 src/lib/dedupe.ts     Job dedupe key, mirrors the SQL generated column

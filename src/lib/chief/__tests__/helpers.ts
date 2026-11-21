@@ -59,6 +59,7 @@ export function fakeServices(order: string[] = [], overrides: Partial<ChiefServi
       recentlyApplied: [],
     }),
     followUps: track("followUps", { overdue: [], dueToday: [], upcoming: [] }),
+    getCareerFacts: track("getCareerFacts", null),
     getJobForDraft: track("getJobForDraft", {
       id: JOB_ID,
       title: "Laboratory Director",

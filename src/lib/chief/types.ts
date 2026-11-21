@@ -118,6 +118,7 @@ export interface ChiefServices {
   listJobs(profileId: string, filter: JobFilter, minFit?: number): Promise<ChiefJob[]>;
   trackerSummary(): Promise<TrackerSummary>;
   followUps(today: string): Promise<FollowUpSummary>;
+  getCareerFacts(): Promise<{ credentials: string; experience: string; other: string } | null>;
   getJobForDraft(jobId: string): Promise<JobForDraft | null>;
   markApplied(jobId: string, appliedOn: string, today: string): Promise<AppliedEntry>;
 }
@@ -139,7 +140,7 @@ export interface ChiefLogger {
 }
 
 export interface ChiefDraft {
-  kind: "follow_up_email" | "thank_you";
+  kind: "follow_up_email" | "thank_you" | "cover_letter";
   jobId: string;
   label: string;
   text: string;

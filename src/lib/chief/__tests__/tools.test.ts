@@ -251,6 +251,47 @@ describe("suggest_shortlist and draft_note", () => {
     expect(body.text).toContain("Laboratory Director role at Harbor Labs on Oct 20, 2026");
     expect(ctx.collected.drafts).toHaveLength(1);
   });
+
+  it("builds a cover letter draft using career facts", async () => {
+    const services = fakeServices([], {
+      getCareerFacts: vi.fn(async () => ({
+        credentials: "CLIA laboratory director certification",
+        experience: "10 years directing clinical laboratories",
+        other: "",
+      })),
+    });
+    const ctx = makeCtx(services);
+    const result = await runTool(
+      { name: "draft_note", input: { kind: "cover_letter", job_id: JOB_ID } },
+      ctx,
+      fakeLogger().logger,
+    );
+    const body = JSON.parse(result.content);
+    expect(body.label).toBe("Draft: cover letter");
+    expect(body.sent).toBe(false);
+    expect(body.text).toContain("CLIA laboratory director certification");
+    expect(body.text).toContain("10 years directing clinical laboratories");
+    expect(body.text).toContain("Subject: Application for Laboratory Director at Harbor Labs");
+    expect(services.getCareerFacts).toHaveBeenCalled();
+    expect(ctx.collected.drafts).toHaveLength(1);
+  });
+
+  it("builds a cover letter draft without career facts when none are saved", async () => {
+    const services = fakeServices([], {
+      getCareerFacts: vi.fn(async () => null),
+    });
+    const ctx = makeCtx(services);
+    const result = await runTool(
+      { name: "draft_note", input: { kind: "cover_letter", job_id: JOB_ID } },
+      ctx,
+      fakeLogger().logger,
+    );
+    const body = JSON.parse(result.content);
+    expect(body.label).toBe("Draft: cover letter");
+    expect(body.text).toContain("Subject: Application for Laboratory Director at Harbor Labs");
+    expect(body.text).not.toContain("CLIA");
+    expect(services.getCareerFacts).toHaveBeenCalled();
+  });
 });
 
 describe("unknown tools", () => {
