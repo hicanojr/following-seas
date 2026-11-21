@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   DEAL_BREAKER_FIT_CAP,
   DEFAULT_RUBRIC,
+  DEFAULT_SCORING_MODEL,
   HARD_GAP_FIT_CAP,
   SYSTEM_PROMPT,
   ScoringModelError,
@@ -93,6 +94,10 @@ describe("callScoringModel", () => {
   const job = makeJob();
   const profile = makeProfile();
 
+  it("uses an active Haiku model by default", () => {
+    expect(DEFAULT_SCORING_MODEL).toBe("claude-haiku-4-5-20251001");
+  });
+
   it("sends the configured model and parses JSON", async () => {
     const { client, create } = mockClient(JSON.stringify(modelScore({ fit: 12 })));
     const result = await callScoringModel(job, profile, MLT_FACTS, pre(), { client, model: "test-model" });
@@ -101,6 +106,7 @@ describe("callScoringModel", () => {
     expect(params.model).toBe("test-model");
     expect(params.system).toBe(SYSTEM_PROMPT);
     expect(params.output_config.format).toBeDefined();
+    expect(params.output_config).not.toHaveProperty("effort");
   });
 
   it("throws on non-JSON, refusals, and truncation", async () => {

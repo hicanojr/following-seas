@@ -80,5 +80,6 @@ class Config:
             embedding_model=(source.get("EMBEDDING_MODEL") or DEFAULT_MODEL).strip() or DEFAULT_MODEL,
             embedding_api_url=(source.get("EMBEDDING_API_URL") or "").strip() or None,
             embedding_api_key=(source.get("EMBEDDING_API_KEY") or "").strip() or None,
-            resume_model=(source.get("RESUME_PARSE_MODEL") or "claude-haiku-5-5").strip() or "claude-haiku-5-5",
+            resume_model=(source.get("RESUME_PARSE_MODEL") or "claude-haiku-4-5-20251001").strip()
+            or "claude-haiku-4-5-20251001",
         )

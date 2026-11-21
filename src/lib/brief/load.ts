@@ -53,7 +53,7 @@ export async function loadBriefInput(
   const [jobs, scores, decisions, applications, queries] = await Promise.all([
     supabase
       .from("jobs")
-      .select("id, title, company, location, url, source, easy_apply, created_at")
+      .select("id, title, company, location, url, source, easy_apply, created_at, description, requirements")
       .eq("user_id", userId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })

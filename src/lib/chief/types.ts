@@ -48,6 +48,7 @@ export interface ChiefJob {
   deal_breaker: string | null;
   easy_apply: EasyApplyLabel;
   url: string | null;
+  veteranPreference?: boolean;
 }
 
 export interface SearchRunSummary {

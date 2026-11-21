@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { EmptyState, PageHeader } from "@/components/EmptyState";
 import { profileToFormInput, type ProfileFormInput } from "@/lib/shortlist/profile-form";
@@ -8,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { setQueryRetired } from "./actions";
 import { DeleteProfile } from "./DeleteProfile";
 import { ProfileEditor } from "./ProfileEditor";
+import { QueryForm } from "./QueryForm";
 import { ResumeForm } from "./ResumeForm";
 
 export const metadata: Metadata = { title: "Profiles" };
@@ -40,6 +42,7 @@ export default function ProfilesPage({ searchParams }: { searchParams: SearchPar
 const card = "rounded-2xl border border-line bg-card p-5 shadow-sm";
 
 async function ProfilesContent({ searchParams }: { searchParams: SearchParams }) {
+  await connection();
   const params = await searchParams;
   const supabase = await createClient();
 
@@ -163,7 +166,7 @@ async function ProfileDetail({ profile }: { profile: Record<string, unknown> }) 
 
       <StatsCard stats={stats} />
 
-      <QueryLibrary queries={(queryRows ?? []) as Record<string, unknown>[]} />
+      <QueryLibrary profileId={id} queries={(queryRows ?? []) as Record<string, unknown>[]} />
 
       <section className={card} aria-labelledby="remove-heading">
         <h2 id="remove-heading" className="text-lg font-semibold">
@@ -328,7 +331,7 @@ function hits(relevant: unknown, total: unknown): string {
   return `${r} of ${t ?? "?"} relevant`;
 }
 
-function QueryLibrary({ queries }: { queries: Record<string, unknown>[] }) {
+function QueryLibrary({ profileId, queries }: { profileId: string; queries: Record<string, unknown>[] }) {
   return (
     <section className={card} aria-labelledby="queries-heading">
       <h2 id="queries-heading" className="text-lg font-semibold">
@@ -338,8 +341,9 @@ function QueryLibrary({ queries }: { queries: Record<string, unknown>[] }) {
         LinkedIn and USAJobs run from the app. Indeed, ZipRecruiter, Glassdoor, and Google run on the JobSpy worker.
         Retired queries are skipped. Restoring a noise query marks it untested so it is judged again.
       </p>
+      <QueryForm profileId={profileId} />
       {queries.length === 0 ? (
-        <p className="mt-4 text-sm text-muted">No queries yet. Queries appear here as searches are added and run.</p>
+        <p className="mt-4 text-sm text-muted">No saved queries yet.</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {queries.map((q) => {

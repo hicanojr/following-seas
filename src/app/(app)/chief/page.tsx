@@ -7,12 +7,12 @@ import { isChiefConfigured } from "@/lib/chief/client";
 import { latestConversationId, loadConversation } from "@/lib/chief/history";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Chief of Staff" };
+export const metadata: Metadata = { title: "Chief" };
 
 export default function ChiefPage() {
   return (
     <>
-      <PageHeader title="Chief of Staff" subtitle="Ask what is new, run searches, and keep your tracker current." />
+      <PageHeader title="Chief" subtitle="Ask what is new, run searches, and keep your tracker current." />
       <Suspense fallback={<p className="text-sm text-muted">Loading your conversation...</p>}>
         <ChiefContent />
       </Suspense>
@@ -25,7 +25,7 @@ async function ChiefContent() {
   if (!supabase) {
     return (
       <EmptyState heading="Not connected yet" upcoming={[]}>
-        <p>Supabase is not configured on this server, so the Chief of Staff has nothing to work with yet.</p>
+        <p>Supabase is not configured on this server, so the Chief has nothing to work with yet.</p>
       </EmptyState>
     );
   }
@@ -40,7 +40,7 @@ async function ChiefContent() {
           <Link href="/login?next=/chief" className="text-accent underline underline-offset-4">
             Sign in
           </Link>{" "}
-          to talk with your Chief of Staff.
+          to talk with your Chief.
         </p>
       </EmptyState>
     );

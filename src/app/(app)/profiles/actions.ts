@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { resumeContentHash } from "@/lib/resume/hash";
+import { parseQueryForm, queryFormInput } from "@/lib/queries/form";
 import { formInput, parseProfileForm } from "@/lib/shortlist/profile-form";
 import { createClient } from "@/lib/supabase/server";
 
@@ -32,6 +33,12 @@ async function session() {
 export interface ResumeFormState {
   status: "idle" | "saved" | "error";
   message: string;
+}
+
+export interface QueryFormState {
+  status: "idle" | "saved" | "error";
+  message: string;
+  errors: Record<string, string>;
 }
 
 const MAX_RESUME_CHARS = 80_000;
@@ -172,4 +179,38 @@ export async function setQueryRetired(formData: FormData): Promise<void> {
   }
   await audit(supabase, retired === "true" ? "query_retire" : "query_restore", "queries", id.data, update);
   refresh();
+}
+
+/** Add one user-owned saved search. Saving it does not run it. */
+export async function saveQuery(_prev: QueryFormState, formData: FormData): Promise<QueryFormState> {
+  const s = await session();
+  if ("error" in s) return { status: "error", message: s.error as string, errors: {} };
+  const { supabase, userId } = s;
+  const parsed = parseQueryForm(queryFormInput(formData));
+  if (!parsed.ok) return { status: "error", message: "Check the highlighted fields.", errors: parsed.errors };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", parsed.value.profile_id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!profile) return { status: "error", message: "That profile was not found.", errors: {} };
+
+  const { data, error } = await supabase
+    .from("queries")
+    .insert({ user_id: userId, ...parsed.value })
+    .select("id")
+    .single();
+  if (error || !data) {
+    if (error?.code === "23505") return { status: "error", message: "That query already exists for this source.", errors: {} };
+    console.error("query insert failed", error?.message);
+    return { status: "error", message: "Could not add the query. Try again.", errors: {} };
+  }
+  await audit(supabase, "query_create", "queries", data.id as string, {
+    profile_id: parsed.value.profile_id,
+    source: parsed.value.source,
+  });
+  refresh();
+  return { status: "saved", message: "Query added. It will run on the next eligible search.", errors: {} };
 }

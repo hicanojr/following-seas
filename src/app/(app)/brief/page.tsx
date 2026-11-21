@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 import { EmptyState, PageHeader } from "@/components/EmptyState";
 import { FollowUpsCard } from "@/components/tracker/FollowUpsCard";
@@ -17,7 +18,7 @@ const card = "rounded-2xl border border-line bg-card p-5 shadow-sm";
 export default function BriefPage() {
   return (
     <>
-      <PageHeader title="Brief" subtitle="Your Chief of Staff's daily report." />
+      <PageHeader title="Brief" subtitle="Your Chief's daily brief." />
       <div className="space-y-4">
         <Suspense fallback={<p className="text-sm text-muted">Preparing your brief...</p>}>
           <BriefContent />
@@ -39,7 +40,7 @@ function NoBrief({ children }: { children?: ReactNode }) {
     >
       {children ?? (
         <p>
-          Once your search profiles are set up, your Chief of Staff will put together a short brief here each day. It
+          Once your search profiles are set up, your Chief will put together a short brief here each day. It
           reports and suggests. It never applies or contacts anyone for you.
         </p>
       )}
@@ -48,6 +49,7 @@ function NoBrief({ children }: { children?: ReactNode }) {
 }
 
 async function BriefContent() {
+  await connection();
   const supabase = await createClient();
   if (!supabase) return <NoBrief />;
   const { data } = await supabase.auth.getUser();
@@ -204,6 +206,11 @@ function fitTone(fit: number | null): string {
 function JobRow({ job, showUnmet }: { job: BriefJob; showUnmet?: boolean }) {
   return (
     <li className="rounded-xl bg-background p-3">
+      {job.veteranPreference ? (
+        <p className="mb-2 inline-flex rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:text-amber-300">
+          <span aria-hidden>★&nbsp;</span> Veterans encouraged
+        </p>
+      ) : null}
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <p className="break-words text-sm font-medium leading-snug">{job.title}</p>

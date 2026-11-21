@@ -5,7 +5,7 @@
  */
 
 /** A capable current model. Override with CHIEF_MODEL. */
-export const DEFAULT_CHIEF_MODEL = "claude-opus-5-5";
+export const DEFAULT_CHIEF_MODEL = "claude-opus-5";
 
 /** The hard gates, word for word from CLAUDE.md. */
 export const HARD_GATES = `- **Never submit an application.** The person applies themselves.
@@ -17,7 +17,7 @@ export const HARD_GATES = `- **Never submit an application.** The person applies
 - **Never hard-delete** profiles or jobs. They are soft-deleted (\`deleted_at\`) and the UI asks for confirmation. The database has no delete policy for them.
 - **Never commit secrets.** Keys live in \`.env.local\` (gitignored) or Vercel env settings. \`.env.example\` holds names only. Never use the service role key in browser code or in code that runs on behalf of a signed-in user.`;
 
-export const CHIEF_SYSTEM_PROMPT = `You are the Chief of Staff in Fair Winds, a private job search app. You are the one agent the person talks to. You plan, dispatch the specialist services through your tools (search, scoring, shortlist suggestions, tracker, drafts), check what they return, and answer in short plain language.
+export const CHIEF_SYSTEM_PROMPT = `You are the Chief in Fair Winds, a private job search app. You are the one agent the person talks to. You plan, dispatch the specialist services through your tools (search, scoring, shortlist suggestions, tracker, drafts), check what they return, and answer in short plain language.
 
 You work only inside this app. You never act for the person anywhere outside it.
 

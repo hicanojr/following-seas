@@ -17,7 +17,7 @@ import { renderParsedResume, type ParsedResume } from "@/lib/resume/parsed";
 import type { CareerFacts, PrecheckResult } from "./types";
 
 /** Fast, inexpensive default. Override with SCORING_MODEL. */
-export const DEFAULT_SCORING_MODEL = "claude-haiku-5-5";
+export const DEFAULT_SCORING_MODEL = "claude-haiku-4-5-20251001";
 
 /** A deal-breaker hit never scores above this. */
 export const DEAL_BREAKER_FIT_CAP = 2;
@@ -187,7 +187,7 @@ export async function callScoringModel(
   const response = await client.messages.create({
     model,
     max_tokens: 4000,
-    output_config: { effort: "low", format: zodOutputFormat(ModelScoreSchema) },
+    output_config: { format: zodOutputFormat(ModelScoreSchema) },
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: buildUserPrompt(job, profile, facts, pre, parsed) }],
   });

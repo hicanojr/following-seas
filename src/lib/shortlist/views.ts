@@ -22,7 +22,7 @@ export interface DecisionLike {
   reason: string | null;
 }
 
-export function groupJobs<J extends { jobId: string; fit: number; dealBreakerHit: string | null }>(
+export function groupJobs<J extends { jobId: string; fit: number; dealBreakerHit: string | null; veteranPreference?: boolean }>(
   jobs: readonly J[],
   decisions: ReadonlyMap<string, DecisionLike>,
 ): Record<JobView, J[]> {
@@ -34,7 +34,8 @@ export function groupJobs<J extends { jobId: string; fit: number; dealBreakerHit
     else if (job.dealBreakerHit) groups.screened.push(job);
     else groups.review.push(job);
   }
-  const byFit = (a: J, b: J) => b.fit - a.fit;
-  for (const key of Object.keys(groups) as JobView[]) groups[key].sort(byFit);
+  const byFitThenVeteran = (a: J, b: J) =>
+    b.fit - a.fit || Number(Boolean(b.veteranPreference)) - Number(Boolean(a.veteranPreference));
+  for (const key of Object.keys(groups) as JobView[]) groups[key].sort(byFitThenVeteran);
   return groups;
 }

@@ -32,7 +32,7 @@ Optional:
 | `EMBEDDING_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` | 384 dimensions. An API model must return that size. |
 | `EMBEDDING_API_URL` | | OpenAI-compatible embeddings endpoint. Only for `EMBEDDING_PROVIDER=api`. |
 | `EMBEDDING_API_KEY` | | Bearer token for that endpoint. |
-| `RESUME_PARSE_MODEL` | `claude-haiku-5-5` | Model for the one-time resume parse. |
+| `RESUME_PARSE_MODEL` | `claude-haiku-4-5-20251001` | Model for the one-time resume parse. |
 
 Example queries, after `select set_config('seed.user_id', '<USER_UUID>', false);` is not required if you set the user id yourself:
 
