@@ -1,0 +1,10 @@
+{
+  "autoReview": [
+    "open",
+    "push"
+  ],
+  "triggerOnDrafts": false,
+  "effort": "base",
+  "shouldUpdateDescription": false,
+  "instructions": "Follow AGENTS.md. Primary code reviewer: prioritize verifiable correctness, security, regressions and accessibility. Comment only; do not approve, merge, push or change code."
+}
